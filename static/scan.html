@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NutriScan - Food Label Scanner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #334155 100%);
+            color: white;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 1.5rem 2rem;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 1.75rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #06B6D4, #3B82F6, #8B5CF6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            padding: 0.5rem 0;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: #06B6D4;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #06B6D4, #3B82F6);
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after, .nav-link.active::after {
+            width: 100%;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 6rem 2rem 2rem;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .page-title {
+            font-size: 2.75rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #FFFFFF, #06B6D4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .page-subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+            animation: fadeInUp 0.8s ease-out 0.2s backwards;
+        }
+
+        .scanner-container {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 2.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            animation: fadeInUp 0.8s ease-out 0.4s backwards;
+        }
+
+        .tab-selector {
+            display: flex;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 0.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: none;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .tab-button:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, #06B6D4, #3B82F6);
+            color: white;
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .input-section {
+            display: none;
+        }
+
+        .input-section.active {
+            display: block;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .camera-container {
+            position: relative;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+        }
+
+        #videoElement, #previewImage {
+            width: 100%;
+            height: auto;
+            max-height: 400px;
+            object-fit: cover;
+            border-radius: 14px;
+            display: none;
+        }
+
+        .camera-placeholder {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            padding: 2rem;
+        }
+
+        .camera-placeholder-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .camera-placeholder-text {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .camera-placeholder-sub {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .upload-area:hover {
+            border-color: #06B6D4;
+            background: rgba(6, 182, 212, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: #3B82F6;
+            background: rgba(59, 130, 246, 0.1);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #06B6D4;
+            display: block;
+        }
+
+        .upload-text {
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-subtext {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            min-width: 140px;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #06B6D4, #3B82F6);
+            color: white;
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(6, 182, 212, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10B981, #059669);
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .loading-container {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .loading-container.show {
+            display: block;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #06B6D4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        .loading-text {
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+            font-size: 1.1rem;
+        }
+
+        .results-container {
+            display: none;
+            margin-top: 2rem;
+            animation: slideInUp 0.5s ease-out;
+        }
+
+        .results-container.show {
+            display: block;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .results-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .nova-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .nova-1 { background: linear-gradient(135deg, #10B981, #34D399); }
+        .nova-2 { background: linear-gradient(135deg, #F59E0B, #FBBF24); }
+        .nova-3 { background: linear-gradient(135deg, #F97316, #FB923C); }
+        .nova-4 { background: linear-gradient(135deg, #EF4444, #F87171); }
+
+        .ingredients-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .ingredient-card {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+            border-radius: 12px;
+            padding: 1.5rem;
+            border-left: 4px solid;
+            transition: all 0.3s ease;
+        }
+
+        .ingredient-card:hover {
+            transform: translateX(4px);
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+        }
+
+        .ingredient-card.safe { border-left-color: #10B981; }
+        .ingredient-card.caution { border-left-color: #F59E0B; }
+        .ingredient-card.warning { border-left-color: #EF4444; }
+
+        .ingredient-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .ingredient-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .rank-number {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .safety-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .safety-safe {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6EE7B7;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .safety-caution {
+            background: rgba(245, 158, 11, 0.2);
+            color: #FCD34D;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .safety-warning {
+            background: rgba(239, 68, 68, 0.2);
+            color: #FCA5A5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .ingredient-category {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .ingredient-description {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+
+        .ingredient-flags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .flag-tag {
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            background: rgba(107, 114, 128, 0.2);
+            color: #D1D5DB;
+            border: 1px solid rgba(107, 114, 128, 0.3);
+        }
+        
+        .flag-tag.severity-low {
+            background: rgba(59, 130, 246, 0.2);
+            color: #93C5FD;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+        
+        .flag-tag.severity-medium {
+            background: rgba(245, 158, 11, 0.2);
+            color: #FCD34D;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        
+        .flag-tag.severity-high {
+            background: rgba(239, 68, 68, 0.2);
+            color: #FCA5A5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .flag-tag.severity-critical {
+            background: rgba(220, 38, 38, 0.2);
+            color: #EF4444;
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        .health-notes {
+            background: linear-gradient(145deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .health-notes-title {
+            color: #93C5FD;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .health-notes-content {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .mobile-nav-toggle {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        .mobile-nav-toggle span {
+            width: 25px;
+            height: 3px;
+            background: white;
+            margin: 3px 0;
+            transition: 0.3s;
+            border-radius: 2px;
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #FCA5A5;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 1rem;
+            }
+
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: rgba(15, 23, 42, 0.95);
+                backdrop-filter: blur(20px);
+                flex-direction: column;
+                padding: 2rem;
+                gap: 1.5rem;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .mobile-nav-toggle {
+                display: flex;
+            }
+
+            .container {
+                padding: 6rem 1rem 2rem;
+            }
+
+            .scanner-container {
+                padding: 1.5rem;
+            }
+
+            .page-title {
+                font-size: 2.25rem;
+            }
+
+            .tab-button {
+                padding: 0.75rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 280px;
+            }
+
+            .results-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar" id="navbar">
+        <a href="home.html" class="logo">NutriScan</a>
+        <div class="nav-links" id="navLinks">
+            <a href="home.html" class="nav-link">Home</a>
+            <a href="scan.html" class="nav-link active">Scan</a>
+            <a href="results.html" class="nav-link">Results</a>
+            <a href="#" class="nav-link">About</a>
+            <a href="#" class="nav-link">Contact</a>
+        </div>
+        <div class="mobile-nav-toggle" id="mobileToggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title">Food Label Scanner</h1>
+            <p class="page-subtitle">
+                Instantly analyze food labels and ingredients for safety, nutrition, and health insights
+            </p>
+        </div>
+
+        <div class="scanner-container">
+            <div class="tab-selector">
+                <button class="tab-button active" data-tab="camera">
+                    <span>📷</span>
+                    Camera
+                </button>
+                <button class="tab-button" data-tab="upload">
+                    <span>📁</span>
+                    Upload
+                </button>
+            </div>
+
+            <!-- Error Message -->
+            <div class="error-message" id="errorMessage"></div>
+
+            <!-- Camera Section -->
+            <div id="cameraSection" class="input-section active">
+                <div class="camera-container" id="cameraContainer">
+                    <video id="videoElement" playsinline></video>
+                    <img id="previewImage" alt="Captured Image" style="display: none;" />
+                    <div class="camera-placeholder" id="cameraPlaceholder">
+                        <div class="camera-placeholder-icon">📷</div>
+                        <div class="camera-placeholder-text">Camera Ready</div>
+                        <div class="camera-placeholder-sub">Click "Start Camera" to begin</div>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button id="startCameraBtn" class="btn btn-primary">
+                        <span>🎥</span>
+                        Start Camera
+                    </button>
+                    <button id="captureBtn" class="btn btn-success" style="display: none;">
+                        <span>📸</span>
+                        Capture Photo
+                    </button>
+                    <button id="retakeBtn" class="btn btn-secondary" style="display: none;">
+                        <span>🔄</span>
+                        Retake
+                    </button>
+                </div>
+            </div>
+
+            <!-- Upload Section -->
+            <div id="uploadSection" class="input-section">
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="fileInput" accept="image/*" capture="environment">
+                    <label for="fileInput">
+                        <span class="upload-icon">📤</span>
+                        <div class="upload-text">Click to upload or drag & drop</div>
+                        <div class="upload-subtext">PNG, JPG or JPEG files supported</div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button id="analyzeBtn" class="btn btn-success" style="display: none;">
+                    <span>🔬</span>
+                    Analyze Image
+                </button>
+                <button id="newScanBtn" class="btn btn-primary" style="display: none;">
+                    <span>🆕</span>
+                    New Scan
+                </button>
+            </div>
+
+            <!-- Loading Container -->
+            <div class="loading-container" id="loadingContainer">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Analyzing your food label...</div>
+            </div>
+
+            <!-- Results Container -->
+            <div class="results-container" id="resultsContainer">
+                <div class="results-header">
+                    <h3 class="results-title">Analysis Results</h3>
+                    <div class="nova-badge" id="novaBadge">NOVA 1</div>
+                </div>
+                
+                <div class="ingredients-grid" id="ingredientsGrid">
+                    <!-- Results will be populated here -->
+                </div>
+
+                <div class="health-notes" id="healthNotes" style="display: none;">
+                    <div class="health-notes-title">
+                        <span>💡</span>
+                        Health Notes
+                    </div>
+                    <div class="health-notes-content" id="healthNotesContent">
+                        <!-- Health notes will be populated dynamically -->
+                    </div>
+                </div>
+
+                <div class="product-name-input" id="productNameInput" style="display: none; margin-bottom: 2rem;">
+                    <div style="background: rgba(255, 255, 255, 0.1); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.2);">
+                        <label style="display: block; margin-bottom: 0.5rem; color: rgba(255, 255, 255, 0.9); font-weight: 500;">
+                            Product Name
+                        </label>
+                        <input 
+                            type="text" 
+                            id="productName" 
+                            placeholder="Enter product name..."
+                            style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: white; font-size: 1rem;"
+                        >
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="saveBtn" class="btn btn-primary">
+                        <span>�</span>
+                        Save Result
+                    </button>
+                    <button id="shareBtn" class="btn btn-secondary">
+                        <span>📤</span>
+                        Share Results
+                    </button>
+                    <a href="results.html" class="btn btn-secondary">
+                        <span>📊</span>
+                        View All Results
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration
+        const API_BASE_URL = window.location.origin;
+
+        let currentImageBlob = null;
+        let videoStream = null;
+
+        // DOM Elements
+        const elements = {
+            cameraSection: document.getElementById('cameraSection'),
+            uploadSection: document.getElementById('uploadSection'),
+            videoElement: document.getElementById('videoElement'),
+            previewImage: document.getElementById('previewImage'),
+            cameraPlaceholder: document.getElementById('cameraPlaceholder'),
+            cameraContainer: document.getElementById('cameraContainer'),
+            startCameraBtn: document.getElementById('startCameraBtn'),
+            captureBtn: document.getElementById('captureBtn'),
+            retakeBtn: document.getElementById('retakeBtn'),
+            uploadArea: document.getElementById('uploadArea'),
+            fileInput: document.getElementById('fileInput'),
+            analyzeBtn: document.getElementById('analyzeBtn'),
+            newScanBtn: document.getElementById('newScanBtn'),
+            loadingContainer: document.getElementById('loadingContainer'),
+            resultsContainer: document.getElementById('resultsContainer'),
+            ingredientsGrid: document.getElementById('ingredientsGrid'),
+            novaBadge: document.getElementById('novaBadge'),
+            healthNotes: document.getElementById('healthNotes'),
+            healthNotesContent: document.getElementById('healthNotesContent'),
+            shareBtn: document.getElementById('shareBtn'),
+            errorMessage: document.getElementById('errorMessage'),
+            productNameInput: document.getElementById('productNameInput'),
+            productName: document.getElementById('productName'),
+            saveBtn: document.getElementById('saveBtn')
+        };
+
+        // Tab switching
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                // Update active tab
+                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.input-section').forEach(s => s.classList.remove('active'));
+                
+                button.classList.add('active');
+                const targetSection = button.dataset.tab === 'camera' ? 'cameraSection' : 'uploadSection';
+                document.getElementById(targetSection).classList.add('active');
+                
+                // Stop camera if switching away from camera tab
+                if (button.dataset.tab !== 'camera') {
+                    stopCamera();
+                }
+                
+                resetState();
+            });
+        });
+
+        // Mobile navigation
+        const mobileToggle = document.getElementById('mobileToggle');
+        const navLinks = document.getElementById('navLinks');
+
+        mobileToggle.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!mobileToggle.contains(e.target) && !navLinks.contains(e.target)) {
+                navLinks.classList.remove('active');
+            }
+        });
+
+        // Camera functionality
+        elements.startCameraBtn.addEventListener('click', startCamera);
+        elements.captureBtn.addEventListener('click', capturePhoto);
+        elements.retakeBtn.addEventListener('click', retakePhoto);
+
+        async function startCamera() {
+            try {
+                elements.cameraPlaceholder.style.display = 'none';
+                
+                const constraints = {
+                    video: {
+                        facingMode: { ideal: "environment" },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                };
+
+                videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+                elements.videoElement.srcObject = videoStream;
+                elements.videoElement.style.display = 'block';
+                
+                elements.startCameraBtn.style.display = 'none';
+                elements.captureBtn.style.display = 'inline-flex';
+
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                showError('Unable to access camera. Please check permissions or try uploading an image instead.');
+                elements.cameraPlaceholder.style.display = 'block';
+            }
+        }
+
+        function stopCamera() {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            elements.videoElement.style.display = 'none';
+            elements.videoElement.srcObject = null;
+        }
+
+        function capturePhoto() {
+            const canvas = document.createElement('canvas');
+            canvas.width = elements.videoElement.videoWidth;
+            canvas.height = elements.videoElement.videoHeight;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(elements.videoElement, 0, 0);
+            
+            canvas.toBlob(blob => {
+                currentImageBlob = blob;
+                elements.previewImage.src = URL.createObjectURL(blob);
+                elements.previewImage.style.display = 'block';
+                elements.videoElement.style.display = 'none';
+                
+                elements.captureBtn.style.display = 'none';
+                elements.retakeBtn.style.display = 'inline-flex';
+                elements.analyzeBtn.style.display = 'inline-flex';
+                
+                stopCamera();
+            }, 'image/jpeg', 0.8);
+        }
+
+        function retakePhoto() {
+            elements.previewImage.style.display = 'none';
+            elements.retakeBtn.style.display = 'none';
+            elements.analyzeBtn.style.display = 'none';
+            currentImageBlob = null;
+            startCamera();
+        }
+
+        // File upload functionality
+        elements.fileInput.addEventListener('change', handleFileUpload);
+        
+        // Drag and drop
+        elements.uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            elements.uploadArea.classList.add('dragover');
+        });
+
+        elements.uploadArea.addEventListener('dragleave', () => {
+            elements.uploadArea.classList.remove('dragover');
+        });
+
+        elements.uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            elements.uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                handleFile(files[0]);
+            }
+        });
+
+        function handleFileUpload(e) {
+            if (e.target.files && e.target.files[0]) {
+                handleFile(e.target.files[0]);
+            }
+        }
+
+        function handleFile(file) {
+            currentImageBlob = file;
+            elements.previewImage.src = URL.createObjectURL(file);
+            elements.previewImage.style.display = 'block';
+            elements.analyzeBtn.style.display = 'inline-flex';
+        }
+
+        // Analysis functionality
+        elements.analyzeBtn.addEventListener('click', analyzeImage);
+        elements.newScanBtn.addEventListener('click', resetState);
+        elements.saveBtn.addEventListener('click', () => {
+            if (!window.lastAnalysisResult) {
+                showError('No scan results to save.');
+                return;
+            }
+            
+            const productName = elements.productName.value.trim();
+            if (!productName) {
+                showError('Please enter a product name before saving.');
+                elements.productName.focus();
+                return;
+            }
+
+            const resultToSave = {
+                ...window.lastAnalysisResult,
+                product_name: productName
+            };
+            saveToHistory(resultToSave);
+        });
+
+        async function analyzeImage() {
+            if (!currentImageBlob) {
+                showError('Please capture or upload an image first.');
+                return;
+            }
+
+            hideError();
+            showLoading();
+
+            const formData = new FormData();
+            formData.append('file', currentImageBlob, 'image.jpg');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Process the response from your API
+                let processedData;
+                
+                if (data.rag_analysis && data.rag_analysis.ingredient_analyses) {
+                    // Use RAG analysis if available
+                    processedData = {
+                        ingredient_analysis: data.rag_analysis.ingredient_analyses,
+                        nova_group: data.rag_analysis.nova_group,
+                        nova_description: data.rag_analysis.nova_description,
+                        health_notes: data.rag_analysis.overall_health_assessment
+                    };
+                } else if (data.extracted_ingredients) {
+                    // Fallback to basic extracted ingredients
+                    processedData = {
+                        ingredient_analysis: data.extracted_ingredients.ingredients.map(ing => ({
+                            name: ing,
+                            category: "Extracted Ingredient",
+                            safety_level: "unknown",
+                            description: "Ingredient extracted from image. Full analysis unavailable.",
+                            flags: []
+                        })),
+                        nova_group: null,
+                        nova_description: "Analysis unavailable",
+                        health_notes: "This analysis is based on ingredient extraction only. For complete safety and nutritional analysis, please ensure the image is clear and contains a complete ingredient list."
+                    };
+                } else {
+                    throw new Error('Unable to extract ingredients from image');
+                }
+
+                window.lastAnalysisResult = processedData;
+                displayResults(processedData);
+
+            } catch (error) {
+                console.error('Analysis error:', error);
+                showError(`Failed to analyze image: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function displayResults(data) {
+            console.log('Displaying results:', data); // Debug log
+
+            // Show product name input
+            document.getElementById('productNameInput').style.display = 'block';
+
+            // Update NOVA badge
+            if (data.nova_group) {
+                elements.novaBadge.textContent = `NOVA ${data.nova_group}`;
+                elements.novaBadge.className = `nova-badge nova-${data.nova_group}`;
+            } else {
+                elements.novaBadge.textContent = 'NOVA N/A';
+                elements.novaBadge.className = 'nova-badge nova-1';
+            }
+
+            // Sort ingredients by harmfulness
+            const sortedIngredients = [...data.ingredient_analysis].sort((a, b) => {
+                // Define safety level weights
+                const safetyWeights = {
+                    'concern': 3,
+                    'caution': 2,
+                    'safe': 1,
+                    'unknown': 0
+                };
+
+                // Calculate severity scores from flags
+                const getSeverityScore = (ing) => {
+                    if (!ing.flags) return 0;
+                    return ing.flags.reduce((score, flag) => {
+                        const severityWeights = {
+                            'critical': 4,
+                            'high': 3,
+                            'medium': 2,
+                            'low': 1
+                        };
+                        return score + (severityWeights[flag.severity] || 0);
+                    }, 0);
+                };
+
+                // Get base scores from safety levels
+                const aBaseScore = safetyWeights[a.safety_level || 'unknown'];
+                const bBaseScore = safetyWeights[b.safety_level || 'unknown'];
+
+                // Add severity scores from flags
+                const aScore = aBaseScore * 10 + getSeverityScore(a);
+                const bScore = bBaseScore * 10 + getSeverityScore(b);
+
+                // Sort descending (most harmful first)
+                return bScore - aScore;
+            });
+
+            // Display ingredients with detailed analysis
+            elements.ingredientsGrid.innerHTML = sortedIngredients.map((ingredient, index) => `
+                <div class="ingredient-card ${ingredient.safety_level || 'unknown'}">
+                    <div class="ingredient-header">
+                        <div class="ingredient-name">
+                            <span class="rank-number">#${index + 1}</span>
+                            ${ingredient.name}
+                        </div>
+                        <div class="safety-badge safety-${ingredient.safety_level || 'unknown'}">
+                            ${(ingredient.safety_level || 'UNKNOWN').toUpperCase()}
+                        </div>
+                    </div>
+                    <div class="ingredient-category">${ingredient.classification || 'Unknown Category'}</div>
+                    <div class="ingredient-description">
+                        ${ingredient.detailed_description || 'No description available.'}
+                        ${ingredient.health_impact ? `
+                            <br><br>
+                            <strong>Health Impact:</strong><br>
+                            ${ingredient.health_impact}
+                        ` : ''}
+                    </div>
+                    ${ingredient.flags && ingredient.flags.length > 0 ? `
+                        <div class="ingredient-flags">
+                            ${ingredient.flags.map(flag => `
+                                <span class="flag-tag ${flag.severity ? `severity-${flag.severity}` : ''}">
+                                    ${flag.category ? `${flag.category}: ` : ''}${flag.description || flag}
+                                </span>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+
+            // Display health notes
+            if (data.health_notes) {
+                elements.healthNotesContent.textContent = data.health_notes;
+                elements.healthNotes.style.display = 'block';
+            } else {
+                elements.healthNotes.style.display = 'none';
+            }
+
+            // Show results and hide other elements
+            elements.resultsContainer.classList.add('show');
+            elements.analyzeBtn.style.display = 'none';
+            elements.newScanBtn.style.display = 'inline-flex';
+        }
+
+        function saveToHistory(data) {
+            try {
+                const results = JSON.parse(localStorage.getItem('nutriscan_results') || '[]');
+                const resultToSave = {
+                    timestamp: Date.now(),
+                    scan_type: 'image_scan',
+                    ...data
+                };
+
+                console.log('Saving result:', resultToSave); // Debug log
+                
+                results.unshift(resultToSave);
+                
+                // Keep only last 50 results
+                if (results.length > 50) {
+                    results.splice(50);
+                }
+                
+                localStorage.setItem('nutriscan_results', JSON.stringify(results));
+                alert('Result saved successfully!');
+
+                // Clear the form after successful save
+                elements.productName.value = '';
+                elements.productNameInput.style.display = 'none';
+                
+                // Redirect to results page after save
+                window.location.href = 'results.html';
+            } catch (error) {
+                console.error('Error saving to history:', error);
+                alert('Failed to save result. Please try again.');
+            }
+        }
+
+        function showLoading() {
+            elements.loadingContainer.classList.add('show');
+            elements.analyzeBtn.disabled = true;
+        }
+
+        function hideLoading() {
+            elements.loadingContainer.classList.remove('show');
+            elements.analyzeBtn.disabled = false;
+        }
+
+        function showError(message) {
+            elements.errorMessage.textContent = message;
+            elements.errorMessage.classList.add('show');
+        }
+
+        function hideError() {
+            elements.errorMessage.classList.remove('show');
+        }
+
+        function resetState() {
+            // Hide all dynamic elements
+            elements.resultsContainer.classList.remove('show');
+            elements.loadingContainer.classList.remove('show');
+            document.getElementById('productNameInput').style.display = 'none';
+            document.getElementById('productName').value = '';
+            hideError();
+            
+            // Reset buttons
+            elements.startCameraBtn.style.display = 'inline-flex';
+            elements.captureBtn.style.display = 'none';
+            elements.retakeBtn.style.display = 'none';
+            elements.analyzeBtn.style.display = 'none';
+            elements.newScanBtn.style.display = 'none';
+            
+            // Reset images
+            elements.previewImage.style.display = 'none';
+            elements.videoElement.style.display = 'none';
+            elements.cameraPlaceholder.style.display = 'block';
+            
+            // Reset file input
+            elements.fileInput.value = '';
+            
+            // Reset state
+            currentImageBlob = null;
+            stopCamera();
+        }
+
+        // Share functionality
+        elements.shareBtn.addEventListener('click', shareResults);
+
+        async function shareResults() {
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'NutriScan Results',
+                        text: 'Check out my food label analysis from NutriScan!',
+                        url: window.location.href
+                    });
+                } catch (error) {
+                    console.log('Share cancelled or failed:', error);
+                }
+            } else {
+                // Fallback: copy link to clipboard
+                try {
+                    await navigator.clipboard.writeText(window.location.href);
+                    alert('Link copied to clipboard!');
+                } catch (error) {
+                    console.error('Failed to copy link:', error);
+                    alert('Unable to share. You can manually copy the URL from your browser.');
+                }
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if user came from results page or has previous scans
+            const hasResults = localStorage.getItem('nutriscan_results');
+            if (hasResults) {
+                console.log('User has previous scan results');
+            }
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            stopCamera();
+        });
+    </script>
+</body>
+</html>

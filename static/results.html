@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NutriScan - Scan Results</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #334155 100%);
+            color: white;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 1.5rem 2rem;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .navbar.scrolled {
+            padding: 1rem 2rem;
+            background: rgba(15, 23, 42, 0.95);
+        }
+
+        .logo {
+            font-size: 1.75rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #06B6D4, #3B82F6, #8B5CF6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            padding: 0.5rem 0;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: #06B6D4;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #06B6D4, #3B82F6);
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after, .nav-link.active::after {
+            width: 100%;
+        }
+
+        .mobile-nav-toggle {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        .mobile-nav-toggle span {
+            width: 25px;
+            height: 3px;
+            background: white;
+            margin: 3px 0;
+            transition: 0.3s;
+            border-radius: 2px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 6rem 2rem 2rem;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .page-title {
+            font-size: 2.75rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #FFFFFF, #06B6D4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .page-subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+            animation: fadeInUp 0.8s ease-out 0.2s backwards;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .search-box {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            color: white;
+            width: 300px;
+            max-width: 100%;
+            backdrop-filter: blur(10px);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #06B6D4;
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+        }
+
+        .search-box::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.75rem 1.25rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.8);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: linear-gradient(135deg, #06B6D4, #3B82F6);
+            border-color: transparent;
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .clear-btn {
+            background: linear-gradient(135deg, #EF4444, #DC2626);
+            border: none;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .clear-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+
+        .results-grid {
+            display: grid;
+            gap: 2rem;
+            grid-template-columns: 1fr;
+        }
+
+        .result-card {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            animation: slideIn 0.5s ease-out;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .result-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
+        }
+
+        .result-header {
+            padding: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-date {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .result-nova {
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .nova-1 { background: linear-gradient(135deg, #10B981, #34D399); }
+        .nova-2 { background: linear-gradient(135deg, #F59E0B, #FBBF24); }
+        .nova-3 { background: linear-gradient(135deg, #F97316, #FB923C); }
+        .nova-4 { background: linear-gradient(135deg, #EF4444, #F87171); }
+
+        .result-body {
+            padding: 2rem;
+        }
+
+        .ingredients-grid {
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        }
+
+        .ingredient-item {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+            border-radius: 16px;
+            padding: 1.5rem;
+            border-left: 4px solid;
+            transition: all 0.3s ease;
+        }
+
+        .ingredient-item:hover {
+            transform: translateX(4px);
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+        }
+
+        .ingredient-item.safe { border-left-color: #10B981; }
+        .ingredient-item.caution { border-left-color: #F59E0B; }
+        .ingredient-item.warning { border-left-color: #EF4444; }
+
+        .ingredient-name {
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        .ingredient-category {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 0.75rem;
+            font-weight: 500;
+        }
+
+        .ingredient-description {
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .ingredient-flags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .flag-tag {
+            background: rgba(239, 68, 68, 0.2);
+            color: #FCA5A5;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            font-weight: 500;
+        }
+
+        .safety-level {
+            display: inline-block;
+            padding: 0.4rem 1rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .safety-safe {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6EE7B7;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .safety-caution {
+            background: rgba(245, 158, 11, 0.2);
+            color: #FCD34D;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .safety-warning {
+            background: rgba(239, 68, 68, 0.2);
+            color: #FCA5A5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 6rem 2rem;
+            color: rgba(255, 255, 255, 0.6);
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+            opacity: 0.5;
+        }
+
+        .empty-message {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .empty-sub {
+            margin-bottom: 3rem;
+            font-size: 1.1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #06B6D4, #3B82F6);
+            color: white;
+            padding: 1.25rem 2.5rem;
+            border: none;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(6, 182, 212, 0.4);
+        }
+
+        .health-notes {
+            background: linear-gradient(145deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            color: #93C5FD;
+        }
+
+        .health-notes strong {
+            color: white;
+            font-weight: 600;
+        }
+
+        .expand-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 1.5rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .expand-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .collapsed .ingredients-grid {
+            display: none;
+        }
+
+        .collapsed .health-notes {
+            display: none;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 1rem;
+            }
+
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: rgba(15, 23, 42, 0.95);
+                backdrop-filter: blur(20px);
+                flex-direction: column;
+                padding: 2rem;
+                gap: 1.5rem;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .mobile-nav-toggle {
+                display: flex;
+            }
+
+            .container {
+                padding: 6rem 1rem 2rem;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 1.25rem;
+            }
+
+            .search-box {
+                width: 100%;
+                margin-bottom: 1rem;
+            }
+
+            .filter-buttons {
+                justify-content: center;
+            }
+
+            .ingredients-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .page-title {
+                font-size: 2.25rem;
+            }
+
+            .result-header, .result-body {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar" id="navbar">
+        <a href="home.html" class="logo">NutriScan</a>
+        <div class="nav-links" id="navLinks">
+            <a href="home.html" class="nav-link">Home</a>
+            <a href="scan.html" class="nav-link">Scan</a>
+            <a href="results.html" class="nav-link active">Results</a>
+            <a href="#" class="nav-link">About</a>
+            <a href="#" class="nav-link">Contact</a>
+        </div>
+        <div class="mobile-nav-toggle" id="mobileToggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title">Scan Results</h1>
+            <p class="page-subtitle">View and manage your food label analysis history</p>
+        </div>
+
+        <div class="controls">
+            <input type="text" class="search-box" placeholder="Search ingredients or product names..." id="searchBox">
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="safe">Safe</button>
+                <button class="filter-btn" data-filter="caution">Caution</button>
+                <button class="filter-btn" data-filter="warning">Warning</button>
+                <button class="clear-btn" onclick="clearAllResults()">Clear All</button>
+            </div>
+        </div>
+
+        <div class="results-grid" id="resultsGrid">
+            <!-- Results will be populated here -->
+        </div>
+
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <div class="empty-icon">📊</div>
+            <div class="empty-message">No scan results yet</div>
+            <div class="empty-sub">Start scanning food labels to see your analysis history here</div>
+            <a href="scan.html" class="btn-primary">Scan Your First Label</a>
+        </div>
+    </div>
+
+    <script>
+        let allResults = [];
+        let filteredResults = [];
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Mobile navigation toggle
+        const mobileToggle = document.getElementById('mobileToggle');
+        const navLinks = document.getElementById('navLinks');
+
+        mobileToggle.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!mobileToggle.contains(e.target) && !navLinks.contains(e.target)) {
+                navLinks.classList.remove('active');
+            }
+        });
+
+        // Load results on page load
+        document.addEventListener('DOMContentLoaded', loadResults);
+
+        function loadResults() {
+            const stored = localStorage.getItem('nutriscan_results');
+            if (stored) {
+                allResults = JSON.parse(stored);
+                filteredResults = [...allResults];
+                displayResults();
+            } else {
+                showEmptyState();
+            }
+        }
+
+        function showEmptyState() {
+            document.getElementById('resultsGrid').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'block';
+        }
+
+        function hideEmptyState() {
+            document.getElementById('resultsGrid').style.display = 'block';
+            document.getElementById('emptyState').style.display = 'none';
+        }
+
+        function displayResults() {
+            const grid = document.getElementById('resultsGrid');
+            
+            if (filteredResults.length === 0) {
+                showEmptyState();
+                return;
+            }
+
+            hideEmptyState();
+            
+            grid.innerHTML = filteredResults.map((result, index) => {
+                const date = new Date(result.timestamp).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                // Handle different result types
+                const isImageScan = result.scan_type === 'image_upload';
+                const isBrandSearch = result.search_type === 'brand_search';
+                
+                // Get NOVA group
+                let novaGroup = result.nova_group || 1;
+                const novaClass = `nova-${novaGroup}`;
+                
+                // Get the display title
+                let titleText = result.product_name || 'Unnamed Product';
+                if (isBrandSearch && result.brand_name) {
+                    titleText = `Brand: ${result.brand_name}`;
+                }
+                
+                // Ensure ingredient_analysis exists
+                const ingredients = result.ingredient_analysis || [];
+                
+                return `
+                    <div class="result-card collapsed" id="card-${index}">
+                        <div class="result-header">
+                            <div>
+                                <div class="result-date">${date}</div>
+                                <div style="font-size: 1rem; color: white; margin-top: 0.5rem; font-weight: 600;">
+                                    ${titleText}
+                                </div>
+                            </div>
+                            <div class="result-nova ${novaClass}">
+                                ${novaGroup ? `NOVA ${novaGroup}` : 'N/A'}
+                            </div>
+                        </div>
+                        <div class="result-body">
+                            <div class="ingredients-grid">
+                                ${ingredients.map(ingredient => `
+                                    <div class="ingredient-item ${ingredient.safety_level || 'unknown'}">
+                                        <div class="ingredient-name">${ingredient.name}</div>
+                                        <div class="ingredient-category">${ingredient.category || 'Unknown Category'}</div>
+                                        <div class="safety-level safety-${ingredient.safety_level || 'unknown'}">
+                                            ${(ingredient.safety_level || 'UNKNOWN').toUpperCase()}
+                                        </div>
+                                        <div class="ingredient-description">${ingredient.description || 'No description available.'}</div>
+                                        ${ingredient.flags && ingredient.flags.length > 0 ? `
+                                            <div class="ingredient-flags">
+                                                ${ingredient.flags.map(flag => `
+                                                    <span class="flag-tag">${flag.type || 'Flag'}: ${flag.description || flag}</span>
+                                                `).join('')}
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                            ${result.health_notes ? `
+                                <div class="health-notes">
+                                    <strong>Health Notes:</strong> ${result.health_notes}
+                                </div>
+                            ` : ''}
+                            <button class="expand-btn" onclick="toggleExpand(${index})">
+                                <span class="expand-text">Show Details</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleExpand(index) {
+            const card = document.getElementById(`card-${index}`);
+            const expandBtn = card.querySelector('.expand-btn .expand-text');
+            
+            if (card.classList.contains('collapsed')) {
+                card.classList.remove('collapsed');
+                expandBtn.textContent = 'Hide Details';
+            } else {
+                card.classList.add('collapsed');
+                expandBtn.textContent = 'Show Details';
+            }
+        }
+
+        // Search functionality
+        document.getElementById('searchBox').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            
+            filteredResults = allResults.filter(result => {
+                // Search in brand name
+                if (result.brand_name && result.brand_name.toLowerCase().includes(query)) {
+                    return true;
+                }
+                
+                // Search in ingredients
+                if (result.ingredient_analysis) {
+                    return result.ingredient_analysis.some(ingredient => 
+                        ingredient.name.toLowerCase().includes(query) ||
+                        (ingredient.category && ingredient.category.toLowerCase().includes(query)) ||
+                        (ingredient.description && ingredient.description.toLowerCase().includes(query))
+                    );
+                }
+                
+                // Search in health notes
+                if (result.health_notes && result.health_notes.toLowerCase().includes(query)) {
+                    return true;
+                }
+                
+                return false;
+            });
+            
+            displayResults();
+        });
+
+        // Filter functionality
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update active filter button
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const filter = btn.dataset.filter;
+                const query = document.getElementById('searchBox').value.toLowerCase();
+                
+                if (filter === 'all') {
+                    filteredResults = allResults;
+                } else {
+                    filteredResults = allResults.filter(result => {
+                        if (result.ingredient_analysis) {
+                            return result.ingredient_analysis.some(ingredient => 
+                                ingredient.safety_level === filter
+                            );
+                        }
+                        return false;
+                    });
+                }
+                
+                // Apply search filter if exists
+                if (query) {
+                    filteredResults = filteredResults.filter(result => {
+                        // Search in brand name
+                        if (result.brand_name && result.brand_name.toLowerCase().includes(query)) {
+                            return true;
+                        }
+                        
+                        // Search in ingredients
+                        if (result.ingredient_analysis) {
+                            return result.ingredient_analysis.some(ingredient => 
+                                ingredient.name.toLowerCase().includes(query) ||
+                                (ingredient.category && ingredient.category.toLowerCase().includes(query)) ||
+                                (ingredient.description && ingredient.description.toLowerCase().includes(query))
+                            );
+                        }
+                        
+                        // Search in health notes
+                        if (result.health_notes && result.health_notes.toLowerCase().includes(query)) {
+                            return true;
+                        }
+                        
+                        return false;
+                    });
+                }
+                
+                displayResults();
+            });
+        });
+
+        function clearAllResults() {
+            if (confirm('Are you sure you want to clear all scan results? This action cannot be undone.')) {
+                localStorage.removeItem('nutriscan_results');
+                allResults = [];
+                filteredResults = [];
+                showEmptyState();
+            }
+        }
+
+        // Function to add a new result (called from scan page)
+        function addScanResult(analysisData) {
+            const result = {
+                timestamp: Date.now(),
+                ...analysisData
+            };
+            
+            allResults.unshift(result); // Add to beginning
+            
+            // Keep only last 50 results to prevent storage overflow
+            if (allResults.length > 50) {
+                allResults = allResults.slice(0, 50);
+            }
+            
+            localStorage.setItem('nutriscan_results', JSON.stringify(allResults));
+            
+            // If we're on the results page, refresh the display
+            if (window.location.pathname.includes('results.html')) {
+                loadResults();
+            }
+        }
+
+        // Export function for other pages to use
+        window.addScanResult = addScanResult;
+    </script>
+</body>
+</html>

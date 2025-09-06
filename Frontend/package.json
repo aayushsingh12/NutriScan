@@ -11,10 +11,12 @@
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
+    "axios": "^1.11.0",
     "gsap": "^3.13.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.8.2",
+    "tailwind": "^4.0.0",
     "tesseract.js": "^6.0.1"
   },
   "devDependencies": {
