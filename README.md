@@ -9,3 +9,9 @@ INTRODUCING NUTRISCAN!
 The project aims to develop an AI-powered food label scanner that helps consumers see through the misleading complexity of packaged food labels. Using OCR, the system extracts label text and runs it through a classification model that assigns a health score based on the NOVA food processing standard. It then flags hidden or confusing ingredients such as artificial colorants (Red 40, Yellow 5), preservatives (sodium benzoate), and disguised sugars (apple juice concentrate, high fructose corn syrup). Additionally, it can flag ingredients that may trigger allergies or affect specific health conditions for the user.
 
 The output is a simple, transparent summary that highlights the product’s real health impact, empowering consumers to make informed dietary choices with clarity and confidence.
+
+
+fastapi dev RagV1.py --port 9000
+fastapi dev main.py --port 8000 [Enter brand here and new file is made combined_response.json and top_products.json]
+
+
