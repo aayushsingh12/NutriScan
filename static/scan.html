@@ -893,19 +893,14 @@
             try {
                 elements.cameraPlaceholder.style.display = 'none';
                 
-                // Try simpler constraints first
+                // Force back camera on mobile devices
                 const constraints = {
-                    video: true
+                    video: {
+                        facingMode: "environment", // Use "exact" to force back camera
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
                 };
-
-                // Fallback to more specific if needed
-                // const constraints = {
-                //     video: {
-                //         facingMode: { ideal: "environment" },
-                //         width: { ideal: 1280 },
-                //         height: { ideal: 720 }
-                //     }
-                // };
 
                 videoStream = await navigator.mediaDevices.getUserMedia(constraints);
                 elements.videoElement.srcObject = videoStream;
