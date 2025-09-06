@@ -893,17 +893,26 @@
             try {
                 elements.cameraPlaceholder.style.display = 'none';
                 
+                // Try simpler constraints first
                 const constraints = {
-                    video: {
-                        facingMode: { ideal: "environment" },
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    }
+                    video: true
                 };
+
+                // Fallback to more specific if needed
+                // const constraints = {
+                //     video: {
+                //         facingMode: { ideal: "environment" },
+                //         width: { ideal: 1280 },
+                //         height: { ideal: 720 }
+                //     }
+                // };
 
                 videoStream = await navigator.mediaDevices.getUserMedia(constraints);
                 elements.videoElement.srcObject = videoStream;
                 elements.videoElement.style.display = 'block';
+                
+                // Add this line to ensure video starts playing
+                await elements.videoElement.play();
                 
                 elements.startCameraBtn.style.display = 'none';
                 elements.captureBtn.style.display = 'inline-flex';
