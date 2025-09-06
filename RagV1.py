@@ -89,7 +89,7 @@ async def initialize_rag_system():
         
         # Load PDF documents from the workspace
         pdf_documents = []
-        pdf_files = ["chapter_3.pdf", "appendix_a_b.pdf", "banned_food_additives.pdf"]
+        pdf_files = ["chapter_3.pdf", "appendix_a_b.pdf", "banned_food_additives.pdf", "openknowledge.pdf","Manual_Food_Additives_25_05_2016.pdf","Approved additives and E numbers.pdf"]
         
         for pdf_file in pdf_files:
             pdf_path = os.path.join(os.getcwd(), pdf_file)
@@ -261,7 +261,10 @@ Source: PubChem compound database and FDA food additive regulations""",
         vectorstore = FAISS.from_documents(split_docs, embeddings)
         retriever = vectorstore.as_retriever(
             search_type="similarity",
-            search_kwargs={"k": 8}
+            search_kwargs={
+                "k": 12,  # Increased from 8 to get more context with new PDF
+                "score_threshold": 0.5  # Only return chunks with similarity > 0.5
+            }
         )
         
         logger.info("RAG system initialized successfully (retriever mode)")
@@ -300,81 +303,121 @@ app.add_middleware(
 )
 
 def clean_and_parse_ingredients(raw_ingredients: List[str]) -> tuple[str, List[str]]:
-    """Parse and clean the raw ingredient list"""
+    """Parse and clean the raw OCR ingredient list"""
     
-    # Join all ingredients and clean
+    # Join all ingredients with spaces and normalize
     full_text = " ".join(raw_ingredients)
+    full_text = re.sub(r'\s+', ' ', full_text).strip()
     
-    # Extract product name (usually the first meaningful item)
-    product_name = raw_ingredients[0] if raw_ingredients else "Unknown Product"
+    # Extract product name
+    product_name = "NAMKEEN" if "NAMKEEN" in full_text else "Snack Product"
     
-    # Clean product name
-    product_name = re.sub(r'\d+', '', product_name).strip().strip(',')
+    # Remove obvious OCR artifacts and standalone numbers
+    full_text = re.sub(r'\b\d+\s*,?\s*$', '', full_text)  # Remove trailing standalone numbers
+    full_text = re.sub(r'^\d+\s+', '', full_text)  # Remove leading standalone numbers
+    full_text = re.sub(r'\s+\d+\s+', ' ', full_text)  # Remove middle standalone numbers
     
-    # Common ingredient patterns and cleaning
+    # Remove product codes like "NAMKEEN 151", "Meal 44", etc.
+    full_text = re.sub(r'\b(NAMKEEN|Meal|Cereal Products)\s+\d+\s*,?\s*', '', full_text)
+    
+    # Clean up the text
+    full_text = re.sub(r'\s*,\s*,\s*', ', ', full_text)  # Fix double commas
+    full_text = re.sub(r'\s+', ' ', full_text)  # Normalize spaces
+    full_text = full_text.strip(' ,')  # Remove leading/trailing commas and spaces
+    
+    # Split by commas but handle complex cases
     ingredients = []
+    parts = [part.strip() for part in full_text.split(',')]
     
-    # Split by common delimiters and clean
-    text_parts = re.split(r'[,\n]', full_text)
-    
-    current_ingredient = ""
-    for part in text_parts:
-        part = part.strip()
-        if not part or part.isdigit() or len(part) < 2:
+    i = 0
+    while i < len(parts):
+        part = parts[i].strip()
+        
+        # Skip empty parts or pure numbers
+        if not part or re.match(r'^\d+$', part) or len(part) < 2:
+            i += 1
             continue
-            
-        # Skip product codes and meal numbers
-        if re.match(r'^(NAMKEEN|Meal|Cereal Products)\s*\d+', part):
-            continue
-            
-        # Handle parenthetical content
-        if '(' in part and ')' in part:
-            ingredients.append(part)
-        elif '(' in part:
-            current_ingredient = part
-        elif ')' in part and current_ingredient:
-            ingredients.append(current_ingredient + " " + part)
-            current_ingredient = ""
-        elif current_ingredient:
-            current_ingredient += " " + part
-        else:
-            # Clean common patterns
-            cleaned = re.sub(r'\s+\d+\s*,?\s*$', '', part)  # Remove trailing numbers
-            cleaned = re.sub(r'^[\d\s,]+', '', cleaned)  # Remove leading numbers/spaces
-            cleaned = cleaned.strip(',').strip()
-            
-            if len(cleaned) > 2 and not cleaned.isdigit():
-                ingredients.append(cleaned)
-    
-    # Further cleaning and categorization
-    final_ingredients = []
-    for ing in ingredients:
-        ing = ing.strip()
-        if len(ing) > 2:
-            # Handle specific patterns
-            if "Oil" in ing and "," in ing:
-                # Handle oil listings
-                oils = [oil.strip() for oil in ing.split(",") if "oil" in oil.lower()]
-                if oils:
-                    final_ingredients.append(f"Edible Vegetable Oil ({', '.join(oils)})")
+        
+        # Handle multi-word ingredients that got split
+        if part.endswith('Oil') and i + 1 < len(parts) and not parts[i + 1].strip():
+            # Handle cases like "Sesame" "Oil ," - combine them
+            combined = part
+            j = i + 1
+            while j < len(parts) and (not parts[j].strip() or parts[j].strip() == ''):
+                j += 1
+            if j < len(parts) and 'oil' in parts[j].lower():
+                combined = part + " " + parts[j].strip()
+                i = j
+            ingredients.append(combined)
+        elif 'Edible Vegetable Oil' in part:
+            # Handle complex oil descriptions
+            oil_desc = part
+            # Look for continuation in next parts
+            j = i + 1
+            while j < len(parts) and j < i + 3:  # Look ahead max 3 parts
+                next_part = parts[j].strip()
+                if next_part and ('oil' in next_part.lower() or 'Oil' in next_part):
+                    oil_desc += ", " + next_part
+                    i = j
+                    break
+                j += 1
+            ingredients.append(oil_desc)
+        elif 'Flavour' in part and 'Natural' in part:
+            # Handle flavor descriptions that might be split
+            flavor_desc = part
+            j = i + 1
+            while j < len(parts) and j < i + 3:
+                next_part = parts[j].strip()
+                if next_part and ('Nature' in next_part or 'Identical' in next_part or 'Flavouring' in next_part or 'Substances' in next_part):
+                    flavor_desc += ", " + next_part
+                    i = j
                 else:
-                    final_ingredients.append(ing)
-            elif "Acidity Regulators" in ing:
-                # Extract E-numbers
-                numbers = re.findall(r'\d{3}', ing)
-                if numbers:
-                    final_ingredients.append(f"Acidity Regulators ({', '.join(numbers)})")
-                else:
-                    final_ingredients.append(ing)
-            elif "Colour" in ing:
-                # Handle color additives
-                color_match = re.search(r'(\d+[a-z]?)', ing, re.IGNORECASE)
-                if color_match:
-                    final_ingredients.append(f"Colour ({color_match.group(1)})")
-                else:
-                    final_ingredients.append(ing)
+                    break
+                j += 1
+            ingredients.append(flavor_desc)
+        elif 'Acidity Regulators' in part:
+            # Handle acidity regulators with numbers
+            acidity_desc = part
+            numbers = re.findall(r'\b\d{3}\b', acidity_desc)
+            if numbers:
+                ingredients.append(f"Acidity Regulators ({', '.join(numbers)})")
             else:
-                final_ingredients.append(ing)
+                ingredients.append(acidity_desc)
+        elif 'Colour' in part:
+            # Handle color additives
+            color_match = re.search(r'(\d+[a-z]?)', part, re.IGNORECASE)
+            if color_match:
+                ingredients.append(f"Colour ({color_match.group(1)})")
+            else:
+                ingredients.append(part)
+        else:
+            # Clean and add regular ingredients
+            cleaned = re.sub(r'\s+\d+\s*$', '', part)  # Remove trailing numbers
+            cleaned = re.sub(r'^\d+\s+', '', cleaned)  # Remove leading numbers
+            cleaned = cleaned.strip()
+            
+            if len(cleaned) > 2 and not re.match(r'^\d+$', cleaned):
+                ingredients.append(cleaned)
+        
+        i += 1
+    
+    # Final cleanup and deduplication
+    final_ingredients = []
+    seen = set()
+    
+    for ing in ingredients:
+        ing = ing.strip(' ,')
+        
+        # Skip if empty or too short
+        if len(ing) < 3:
+            continue
+            
+        # Skip if already seen (case insensitive)
+        if ing.lower() in seen:
+            continue
+            
+        seen.add(ing.lower())
+        final_ingredients.append(ing)
     
     return product_name, final_ingredients
 
@@ -740,71 +783,154 @@ async def get_loaded_documents():
     except Exception as e:
         return {"error": f"Could not retrieve document info: {e}"}
 
+async def analyze_single_ingredient_with_rag(ingredient: str) -> IndividualIngredientAnalysis:
+    """Analyze a single ingredient using RAG system"""
+    global retriever
+    
+    if not retriever:
+        # Fallback to pattern analysis if RAG not available
+        return analyze_individual_ingredient(ingredient)
+    
+    try:
+        # Query RAG system specifically for this ingredient
+        rag_query = f"Analyze the food ingredient '{ingredient}'. Provide safety information, health impacts, classification, and any flags or concerns."
+        
+        relevant_docs = retriever.invoke(rag_query)
+        
+        # Extract relevant information from RAG results
+        rag_context = "\n".join([doc.page_content for doc in relevant_docs[:5]])
+        
+        # Use RAG context to enhance the analysis
+        enhanced_analysis = enhance_analysis_with_rag_context(ingredient, rag_context)
+        
+        return enhanced_analysis
+        
+    except Exception as e:
+        logger.warning(f"RAG analysis failed for '{ingredient}': {e}")
+        # Fallback to pattern analysis
+        return analyze_individual_ingredient(ingredient)
+
+def enhance_analysis_with_rag_context(ingredient: str, rag_context: str) -> IndividualIngredientAnalysis:
+    """Enhance ingredient analysis using RAG context"""
+    
+    # Start with pattern-based analysis
+    base_analysis = analyze_individual_ingredient(ingredient)
+    
+    # Enhance with RAG context
+    ingredient_lower = ingredient.lower()
+    rag_lower = rag_context.lower()
+    
+    # Look for specific mentions of this ingredient in RAG context
+    if ingredient_lower in rag_lower:
+        # Extract relevant information from RAG
+        if 'allergen' in rag_lower and ingredient_lower in rag_lower:
+            base_analysis.flags.append(IngredientFlag(
+                severity="high",
+                category="allergen", 
+                description="Identified as potential allergen in food safety documents"
+            ))
+        
+        if 'banned' in rag_lower and ingredient_lower in rag_lower:
+            base_analysis.safety_level = "avoid"
+            base_analysis.flags.append(IngredientFlag(
+                severity="critical",
+                category="regulatory",
+                description="May be subject to regulatory restrictions"
+            ))
+        
+        if 'e-number' in rag_lower or 'e number' in rag_lower:
+            base_analysis.classification = "food_additive"
+            base_analysis.detailed_description += " This ingredient has an E-number designation indicating it's a regulated food additive."
+    
+    return base_analysis
+
+def generate_overall_assessment(analyses: List[IndividualIngredientAnalysis]) -> Dict[str, Any]:
+    """Generate overall assessment from individual ingredient analyses"""
+    
+    additive_count = sum(1 for a in analyses if 'additive' in a.classification.lower())
+    concern_count = sum(1 for a in analyses if a.safety_level in ['concern', 'avoid'])
+    allergen_count = sum(1 for a in analyses if any(f.category == 'allergen' for f in a.flags))
+    
+    # NOVA classification
+    if additive_count >= 3 or len(analyses) >= 8:
+        nova_group = 4
+        nova_desc = "Ultra-processed food with multiple industrial additives"
+    elif additive_count >= 1:
+        nova_group = 3
+        nova_desc = "Processed food with some industrial ingredients"
+    else:
+        nova_group = 2
+        nova_desc = "Minimally processed ingredients"
+    
+    # Health assessment
+    if concern_count >= 2:
+        health_assessment = "High concern - multiple problematic ingredients identified"
+    elif concern_count >= 1 or allergen_count >= 2:
+        health_assessment = "Moderate concern - some ingredients may pose risks"
+    else:
+        health_assessment = "Low to moderate concern - most ingredients appear acceptable"
+    
+    # Recommendations
+    recommendations = []
+    if allergen_count > 0:
+        recommendations.append("Check for allergen sensitivities")
+    if additive_count >= 3:
+        recommendations.append("Consider products with fewer additives")
+    if not recommendations:
+        recommendations.append("Product appears relatively safe for general consumption")
+    
+    return {
+        "nova_group": nova_group,
+        "nova_description": nova_desc,
+        "health_assessment": health_assessment,
+        "recommendations": recommendations
+    }
+
 @app.post("/analyze_ingredients", response_model=IngredientAnalysisResponse)
 async def analyze_ingredients(request: IngredientListRequest):
     """
     Analyze food ingredients individually and return detailed safety information
-    
-    Args:
-        request: IngredientListRequest containing list of ingredients
-        
-    Returns:
-        IngredientAnalysisResponse with individual ingredient analyses
     """
     try:
         if not request.ingredients:
             raise HTTPException(status_code=400, detail="No ingredients provided")
         
-        # Parse and clean ingredients
-        product_name, clean_ingredients = clean_and_parse_ingredients(request.ingredients)
+        # NO COMPLEX PARSING - just clean each ingredient individually
+        clean_ingredients = []
+        for ingredient in request.ingredients:
+            cleaned = ingredient.strip()
+            if len(cleaned) > 1:  # Keep anything longer than 1 character
+                clean_ingredients.append(cleaned)
         
         if not clean_ingredients:
             raise HTTPException(status_code=400, detail="No valid ingredients found")
         
-        # Analyze with enhanced individual analysis
-        analysis_result = await analyze_with_rag(clean_ingredients)
+        # Analyze each ingredient completely separately
+        ingredient_analyses = []
         
-        # Construct response with individual ingredient analyses
-        response = IngredientAnalysisResponse(
-            product_name=product_name,
-            ingredient_analyses=analysis_result["ingredient_analyses"],
-            nova_group=analysis_result["nova_group"],
-            nova_description=analysis_result["nova_description"],
-            overall_health_assessment=analysis_result["overall_health_assessment"],
-            recommendations=analysis_result["recommendations"]
-        )
+        logger.info(f"Analyzing {len(clean_ingredients)} ingredients individually:")
+        for i, ingredient in enumerate(clean_ingredients):
+            logger.info(f"  {i+1}. Analyzing: '{ingredient}'")
+            
+            # Each ingredient gets its own individual analysis
+            analysis = await analyze_single_ingredient_with_rag(ingredient)
+            ingredient_analyses.append(analysis)
         
-        return response
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Analysis error: {e}")
-        
-        # Enhanced fallback response with individual analysis
-        fallback_analyses = []
-        for ingredient in request.ingredients:
-            fallback_analyses.append(IndividualIngredientAnalysis(
-                name=ingredient,
-                classification="unknown",
-                safety_level="caution",
-                detailed_description=f"{ingredient} - comprehensive analysis unavailable due to system limitations.",
-                health_impact="Unable to assess health impact. Consider consulting ingredient databases or nutrition professionals.",
-                flags=[IngredientFlag(
-                    severity="medium",
-                    category="system",
-                    description="Analysis limited due to technical constraints"
-                )]
-            ))
+        # Generate overall assessment from individual analyses
+        overall_result = generate_overall_assessment(ingredient_analyses)
         
         return IngredientAnalysisResponse(
-            product_name="Product Analysis",
-            ingredient_analyses=fallback_analyses,
-            nova_group=3,
-            nova_description="Classification unavailable - using precautionary processed food designation.",
-            overall_health_assessment="Unable to provide comprehensive assessment due to system limitations.",
-            recommendations=["Consult nutrition professionals for detailed ingredient analysis", "Exercise caution with heavily processed foods"]
+            product_name="Food Product",
+            ingredient_analyses=ingredient_analyses,
+            nova_group=overall_result["nova_group"],
+            nova_description=overall_result["nova_description"], 
+            overall_health_assessment=overall_result["health_assessment"],
+            recommendations=overall_result["recommendations"]
         )
+        
+    except Exception as e:
+        logger.error(f"Analysis error: {e}")
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
