@@ -1223,12 +1223,20 @@
             };
 
             let totalSafetyScore = 0;
+            let totalNovaScore = 0;
             let ingredientCount = 0;
+            let productCount = 0;
 
             allResults.forEach(result => {
-                // Count NOVA levels
+                productCount++;
+                
+                // Count NOVA levels and calculate NOVA score
                 const nova = result.nova_group || 4;
                 cartAnalysis.novaBreakdown[nova]++;
+                
+                // NOVA scoring: 1=100, 2=75, 3=40, 4=10 points
+                const novaScores = { 1: 100, 2: 75, 3: 40, 4: 10 };
+                totalNovaScore += novaScores[nova];
 
                 // Analyze ingredients
                 if (result.ingredient_analysis) {
@@ -1238,7 +1246,7 @@
 
                         const safety = ingredient.safety_level || 'unknown';
                         
-                        // Count safety levels
+                        // Count safety levels and calculate safety scores
                         if (safety === 'safe') {
                             cartAnalysis.safetyBreakdown.safe++;
                             totalSafetyScore += 100;
@@ -1256,15 +1264,49 @@
                                 ingredient: ingredient.name,
                                 reason: ingredient.health_impact || 'Potential health concerns identified'
                             });
+                        } else {
+                            // Unknown safety - neutral score
+                            totalSafetyScore += 50;
                         }
                     });
                 }
             });
 
-            // Calculate overall health score
-            if (ingredientCount > 0) {
-                cartAnalysis.healthScore = Math.round(totalSafetyScore / ingredientCount);
+            // Calculate weighted health score
+            // 60% weight to NOVA score, 40% weight to ingredient safety
+            let finalScore = 0;
+            
+            if (productCount > 0 && ingredientCount > 0) {
+                const avgNovaScore = totalNovaScore / productCount;
+                const avgSafetyScore = totalSafetyScore / ingredientCount;
+                
+                // Weighted combination: NOVA heavily weighted
+                finalScore = Math.round((avgNovaScore * 0.6) + (avgSafetyScore * 0.4));
+                
+                // Apply penalties for concerning patterns
+                const nova4Ratio = cartAnalysis.novaBreakdown[4] / productCount;
+                const concernRatio = cartAnalysis.dangerousIngredients / ingredientCount;
+                
+                // Heavy penalty for high NOVA 4 ratio
+                if (nova4Ratio >= 0.5) {
+                    finalScore = Math.max(finalScore - 30, 10); // Cap at minimum 10
+                } else if (nova4Ratio >= 0.3) {
+                    finalScore = Math.max(finalScore - 20, 15);
+                }
+                
+                // Additional penalty for concerning ingredients
+                if (concernRatio >= 0.2) {
+                    finalScore = Math.max(finalScore - 15, 10);
+                }
+                
+                // Bonus for having mostly NOVA 1-2 products
+                const wholeFoodRatio = (cartAnalysis.novaBreakdown[1] + cartAnalysis.novaBreakdown[2]) / productCount;
+                if (wholeFoodRatio >= 0.7) {
+                    finalScore = Math.min(finalScore + 10, 100); // Cap at 100
+                }
             }
+
+            cartAnalysis.healthScore = Math.max(finalScore, 0); // Ensure never negative
 
             // Generate recommendations
             generateRecommendations();
@@ -1273,43 +1315,82 @@
         function generateRecommendations() {
             cartAnalysis.recommendations = [];
 
-            const { novaBreakdown, safetyBreakdown, healthScore } = cartAnalysis;
+            const { novaBreakdown, safetyBreakdown, healthScore, totalProducts } = cartAnalysis;
+            const nova4Ratio = novaBreakdown[4] / totalProducts;
+            const nova3And4Ratio = (novaBreakdown[3] + novaBreakdown[4]) / totalProducts;
+            const wholeFoodRatio = (novaBreakdown[1] + novaBreakdown[2]) / totalProducts;
 
-            // NOVA-based recommendations
-            if (novaBreakdown[4] > novaBreakdown[1] + novaBreakdown[2]) {
+            // NOVA-focused recommendations (high priority)
+            if (nova4Ratio > 0.5) {
                 cartAnalysis.recommendations.push(
-                    "Consider reducing ultra-processed foods (NOVA 4) and choosing more whole foods (NOVA 1-2)."
+                    `🚨 Critical: ${Math.round(nova4Ratio * 100)}% of your products are ultra-processed (NOVA 4). This significantly increases health risks. Consider replacing with whole foods.`
+                );
+            } else if (nova4Ratio > 0.3) {
+                cartAnalysis.recommendations.push(
+                    `⚠️ Warning: ${Math.round(nova4Ratio * 100)}% of your products are ultra-processed. Try to limit NOVA 4 products to less than 20% of your cart.`
+                );
+            } else if (nova4Ratio > 0.1) {
+                cartAnalysis.recommendations.push(
+                    `💡 Tip: You have some ultra-processed products (${Math.round(nova4Ratio * 100)}%). Consider reducing these for better health outcomes.`
+                );
+            }
+
+            // Processed foods warning
+            if (nova3And4Ratio > 0.7) {
+                cartAnalysis.recommendations.push(
+                    `📊 ${Math.round(nova3And4Ratio * 100)}% of your cart is processed/ultra-processed. Aim for at least 50% whole foods (NOVA 1-2).`
+                );
+            }
+
+            // Positive reinforcement for good choices
+            if (wholeFoodRatio >= 0.7) {
+                cartAnalysis.recommendations.push(
+                    `🎉 Excellent! ${Math.round(wholeFoodRatio * 100)}% of your products are minimally processed. Keep up the healthy choices!`
+                );
+            } else if (wholeFoodRatio >= 0.5) {
+                cartAnalysis.recommendations.push(
+                    `👍 Good balance: ${Math.round(wholeFoodRatio * 100)}% whole foods. Try to increase this to 70% for optimal health.`
                 );
             }
 
             // Safety-based recommendations
             if (safetyBreakdown.concern > 0) {
                 cartAnalysis.recommendations.push(
-                    `You have ${safetyBreakdown.concern} concerning ingredients. Consider finding alternatives for products with these ingredients.`
+                    `⚠️ Found ${safetyBreakdown.concern} concerning ingredients across your products. Check the alerts section for details.`
                 );
             }
 
-            // Health score recommendations
-            if (healthScore < 50) {
+            // Health score specific advice
+            if (healthScore < 30) {
                 cartAnalysis.recommendations.push(
-                    "Your cart has a low health score. Focus on products with fewer additives and preservatives."
+                    `🔄 Health Score: ${healthScore}/100 - Consider a major cart overhaul focusing on whole foods and fewer additives.`
+                );
+            } else if (healthScore < 50) {
+                cartAnalysis.recommendations.push(
+                    `📈 Health Score: ${healthScore}/100 - You're on the right track! Focus on replacing ultra-processed items.`
                 );
             } else if (healthScore >= 80) {
                 cartAnalysis.recommendations.push(
-                    "Great job! Your cart shows healthy food choices with minimal concerning ingredients."
+                    `⭐ Outstanding Health Score: ${healthScore}/100 - Your food choices are setting a great example!`
                 );
             }
 
-            // Specific recommendations
+            // Specific actionable advice
+            if (novaBreakdown[4] > 0) {
+                cartAnalysis.recommendations.push(
+                    `🥗 Quick wins: Replace ultra-processed snacks with nuts, fruits, or minimally processed alternatives.`
+                );
+            }
+
             if (cartAnalysis.totalProducts > 10) {
                 cartAnalysis.recommendations.push(
-                    "You've scanned many products! Consider creating a favorites list of the healthiest options."
+                    `📱 Pro tip: Use your scan history to identify your healthiest products and create a shopping list of favorites.`
                 );
             }
 
             if (cartAnalysis.recommendations.length === 0) {
                 cartAnalysis.recommendations.push(
-                    "Keep scanning products to get personalized health recommendations!"
+                    "🔍 Keep scanning products to get personalized health recommendations!"
                 );
             }
         }
@@ -1359,20 +1440,45 @@
             const iconElement = document.getElementById('cartStatusIcon');
             const textElement = document.getElementById('cartStatusText');
 
-            const { healthScore } = cartAnalysis;
+            const { healthScore, novaBreakdown, totalProducts } = cartAnalysis;
+            
+            // Calculate NOVA 4 ratio for additional logic
+            const nova4Ratio = novaBreakdown[4] / totalProducts;
+            const nova3And4Ratio = (novaBreakdown[3] + novaBreakdown[4]) / totalProducts;
 
-            if (healthScore >= 75) {
+            // Stricter health categorization with NOVA emphasis
+            if (healthScore >= 80 && nova4Ratio <= 0.1) {
+                // Excellent: High score AND very few ultra-processed foods
                 statusElement.className = 'cart-status healthy';
                 iconElement.textContent = '💚';
-                textElement.textContent = 'Healthy Cart';
-            } else if (healthScore >= 50) {
+                textElement.textContent = 'Excellent Cart';
+            } else if (healthScore >= 65 && nova4Ratio <= 0.3 && nova3And4Ratio <= 0.5) {
+                // Good: Decent score with moderate processing
+                statusElement.className = 'cart-status healthy';
+                iconElement.textContent = '✅';
+                textElement.textContent = 'Good Cart';
+            } else if (healthScore >= 45 && nova4Ratio <= 0.6) {
+                // Fair: Average score, manageable processing
                 statusElement.className = 'cart-status moderate';
                 iconElement.textContent = '⚠️';
-                textElement.textContent = 'Moderate Cart';
+                textElement.textContent = 'Fair Cart';
+            } else if (healthScore >= 30) {
+                // Needs Work: Low score or too much processing
+                statusElement.className = 'cart-status moderate';
+                iconElement.textContent = '⚡';
+                textElement.textContent = 'Needs Improvement';
             } else {
+                // Poor: Very low score or heavily processed
                 statusElement.className = 'cart-status unhealthy';
                 iconElement.textContent = '🚨';
-                textElement.textContent = 'Needs Improvement';
+                textElement.textContent = 'Concerning Cart';
+            }
+
+            // Special override: If more than 50% NOVA 4, force concerning/unhealthy
+            if (nova4Ratio > 0.5) {
+                statusElement.className = 'cart-status unhealthy';
+                iconElement.textContent = '🚨';
+                textElement.textContent = 'Too Processed';
             }
         }
 
