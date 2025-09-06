@@ -484,7 +484,7 @@
     <div class="container">
         <div class="page-header">
             <h1 class="page-title">Health Profile</h1>
-            <p class="page-subtitle">Personalize your food analysis by setting your allergies, dietary restrictions, and health conditions</p>
+            <p class="page-subtitle">Personalize your food analysis by setting your allergies and health conditions</p>
         </div>
 
         <div class="profile-section">
@@ -501,18 +501,6 @@
             <div class="custom-allergies">
                 <label for="customAllergies" class="severity-label">Additional Allergies or Sensitivities:</label>
                 <textarea id="customAllergies" class="custom-input" placeholder="Enter any other allergies or sensitivities (comma-separated)..."></textarea>
-            </div>
-        </div>
-
-        <div class="profile-section">
-            <h2 class="section-title">
-                <span>🥗</span>
-                Dietary Preferences
-            </h2>
-            <p class="section-subtitle">Tell us about your dietary choices so we can provide better recommendations.</p>
-            
-            <div class="toggle-grid" id="dietaryGrid">
-                <!-- Dietary preferences will be populated here -->
             </div>
         </div>
 
@@ -554,16 +542,6 @@
                 { id: 'sesame', name: 'Sesame', icon: '🫴', description: 'Sesame seeds and tahini' },
                 { id: 'sulfites', name: 'Sulfites', icon: '🧪', description: 'Preservative sensitivity (wine, dried fruits)' }
             ],
-            dietary: [
-                { id: 'vegetarian', name: 'Vegetarian', icon: '🥬', description: 'No meat, poultry, or fish' },
-                { id: 'vegan', name: 'Vegan', icon: '🌱', description: 'No animal products whatsoever' },
-                { id: 'halal', name: 'Halal', icon: '☪️', description: 'Islamic dietary requirements' },
-                { id: 'kosher', name: 'Kosher', icon: '✡️', description: 'Jewish dietary laws' },
-                { id: 'keto', name: 'Ketogenic', icon: '🥓', description: 'Very low carb, high fat diet' },
-                { id: 'paleo', name: 'Paleo', icon: '🦴', description: 'Whole foods, no processed items' },
-                { id: 'low_sodium', name: 'Low Sodium', icon: '🧂', description: 'Reduced salt intake' },
-                { id: 'low_sugar', name: 'Low Sugar', icon: '🍭', description: 'Minimal added sugars' }
-            ],
             health: [
                 { id: 'diabetes', name: 'Diabetes', icon: '🩸', description: 'Blood sugar management required' },
                 { id: 'hypertension', name: 'High Blood Pressure', icon: '💗', description: 'Need to limit sodium and certain additives' },
@@ -578,7 +556,6 @@
 
         let currentProfile = {
             allergies: {},
-            dietary: {},
             health: {},
             customAllergies: ''
         };
@@ -628,7 +605,6 @@
 
         function renderProfile() {
             renderSection('allergies', 'allergiesGrid');
-            renderSection('dietary', 'dietaryGrid');
             renderSection('health', 'healthGrid');
         }
 
@@ -638,7 +614,6 @@
             
             grid.innerHTML = items.map(item => {
                 const isActive = currentProfile[section][item.id]?.enabled || false;
-                const severity = currentProfile[section][item.id]?.severity || 'mild';
                 
                 return `
                     <div class="toggle-item ${isActive ? 'active' : ''}" onclick="toggleItem('${section}', '${item.id}')">
@@ -650,19 +625,6 @@
                             <div class="toggle-switch ${isActive ? 'active' : ''}" onclick="event.stopPropagation(); toggleItem('${section}', '${item.id}')"></div>
                         </div>
                         <div class="toggle-description">${item.description}</div>
-                        ${section === 'allergies' || section === 'health' ? `
-                            <div class="severity-selector">
-                                <div class="severity-label">Severity Level:</div>
-                                <div class="severity-options">
-                                    <button class="severity-btn ${severity === 'mild' ? 'active' : ''}" 
-                                            onclick="event.stopPropagation(); setSeverity('${section}', '${item.id}', 'mild')">Mild</button>
-                                    <button class="severity-btn ${severity === 'moderate' ? 'active' : ''}" 
-                                            onclick="event.stopPropagation(); setSeverity('${section}', '${item.id}', 'moderate')">Moderate</button>
-                                    <button class="severity-btn ${severity === 'severe' ? 'active' : ''}" 
-                                            onclick="event.stopPropagation(); setSeverity('${section}', '${item.id}', 'severe')">Severe</button>
-                                </div>
-                            </div>
-                        ` : ''}
                     </div>
                 `;
             }).join('');
@@ -670,19 +632,10 @@
 
         function toggleItem(section, itemId) {
             if (!currentProfile[section][itemId]) {
-                currentProfile[section][itemId] = { enabled: false, severity: 'mild' };
+                currentProfile[section][itemId] = { enabled: false };
             }
             
             currentProfile[section][itemId].enabled = !currentProfile[section][itemId].enabled;
-            renderProfile();
-        }
-
-        function setSeverity(section, itemId, severity) {
-            if (!currentProfile[section][itemId]) {
-                currentProfile[section][itemId] = { enabled: true, severity: 'mild' };
-            }
-            
-            currentProfile[section][itemId].severity = severity;
             renderProfile();
         }
 
@@ -701,7 +654,6 @@
             if (confirm('Are you sure you want to reset your health profile? This will clear all your settings.')) {
                 currentProfile = {
                     allergies: {},
-                    dietary: {},
                     health: {},
                     customAllergies: ''
                 };
