@@ -1,33 +1,24 @@
 {
   "top_product": {
     "ingredients": [
-      "Carbonated Water",
-      "Sugar",
-      "Acidity Regulators E330",
-      "E331",
-      "Flavour (Natural and Nature Identical Flavouring substances)",
-      "Sequestrants E452",
-      "E385",
-      "Taurine",
-      "Caffeine (29 mg/100 ml)",
-      "Preservatives E211",
-      "E202",
-      "Sweeteners E955",
-      "E950",
-      "Colour E129",
-      "Inositol",
-      "Vitamins Premix."
+      "water",
+      "sugar",
+      "carbonic acid",
+      "colour e150d",
+      "acidifier phosphoric acid",
+      "natural flavor",
+      "aroma caffeine"
     ],
     "nova_group": 4
   },
   "rag_analysis": {
-    "product_name": "Carbonated Water",
+    "product_name": "water",
     "ingredients": [
-      "Acidity Regulators (330, 331, 452, 385, 100, 211, 202, 955, 950, 129)"
+      "water sugar carbonic acid colour e150d acidifier phosphoric acid natural flavor aroma caffeine"
     ],
     "warnings": [],
     "nova_group": 3,
     "nova_description": "Processed food with added ingredients",
-    "health_notes": "Contains processed ingredients - moderate consumption recommended; Contains 1 additives - check individual sensitivities"
+    "health_notes": "Contains processed ingredients - moderate consumption recommended; Contains 1 forms of sugar - monitor sugar intake; Contains 2 additives - check individual sensitivities"
   }
 }
