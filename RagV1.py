@@ -503,41 +503,6 @@ async def analyze_ingredients(request: IngredientListRequest):
         logger.error(f"Analysis error: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-@app.post("/analyze_ingredients_simple")
-async def analyze_ingredients_simple(request: IngredientListRequest):
-    """
-    Simplified analysis endpoint that returns raw JSON
-    """
-    try:
-        if not request.ingredients:
-            return {"error": "No ingredients provided"}
-        
-        # Parse and clean ingredients
-        product_name, clean_ingredients = clean_and_parse_ingredients(request.ingredients)
-        
-        if not clean_ingredients:
-            return {"error": "No valid ingredients found"}
-        
-        # Analyze with RAG system
-        analysis_result = await analyze_with_rag(clean_ingredients)
-        
-        return {
-            "product_name": product_name,
-            "ingredients": clean_ingredients,
-            "warnings": analysis_result["warnings"],
-            "nova_group": analysis_result["nova_group"],
-            "nova_description": analysis_result["nova_description"],
-            "health_notes": analysis_result["health_notes"]
-        }
-        
-    except Exception as e:
-        logger.error(f"Simple analysis error: {e}")
-        return {"error": f"Analysis failed: {str(e)}"}
-
 if __name__ == "__main__":
-<<<<<<< HEAD
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-=======
-    main()
->>>>>>> 60124866759fce970479d3360665c884bcb47ba3
