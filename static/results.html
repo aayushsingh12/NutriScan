@@ -376,6 +376,7 @@
         .page-header {
             text-align: center;
             margin-bottom: 2rem;
+            position: relative;
         }
 
         .page-title {
@@ -395,6 +396,30 @@
             max-width: 600px;
             margin: 0 auto 2rem;
             animation: fadeInUp 0.8s ease-out 0.2s backwards;
+        }
+
+        .top-clear-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: linear-gradient(135deg, #EF4444, #DC2626);
+            border: none;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .top-clear-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
         }
 
         .controls {
@@ -760,31 +785,231 @@
                 padding: 6rem 1rem 2rem;
             }
 
+            .page-header {
+                margin-bottom: 2rem;
+            }
+
+            .page-title {
+                font-size: 2rem;
+                margin-bottom: 0.75rem;
+            }
+
+            .page-subtitle {
+                font-size: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .top-clear-btn {
+                position: static;
+                margin: 1rem auto 0;
+                font-size: 0.9rem;
+                padding: 0.75rem 1.5rem;
+            }
+
+            .dashboard-title {
+                font-size: 1.8rem;
+            }
+
+            .dashboard-subtitle {
+                font-size: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
+                padding: 1.5rem;
+            }
+
+            .stat-card {
+                padding: 1.5rem;
+            }
+
+            .stat-icon {
+                font-size: 2.5rem;
+                margin-bottom: 0.75rem;
+            }
+
+            .stat-number {
+                font-size: 2rem;
+            }
+
+            .stat-label {
+                font-size: 0.9rem;
+            }
+
+            .charts-section {
+                padding: 0 1.5rem 1.5rem;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .chart-card {
+                padding: 1.5rem;
+            }
+
+            .chart-title {
+                font-size: 1.2rem;
+                margin-bottom: 1rem;
+            }
+
+            .chart-container {
+                height: 250px;
+            }
+
+            .nova-breakdown {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+                margin-top: 1.5rem;
+            }
+
+            .nova-item {
+                padding: 1rem 0.5rem;
+            }
+
+            .nova-count {
+                font-size: 1.5rem;
+            }
+
+            .nova-label {
+                font-size: 0.8rem;
+            }
+
+            .alerts-section, .recommendations-section {
+                margin: 1.5rem;
+                padding: 1.5rem;
+            }
+
+            .alerts-title, .recommendations-title {
+                font-size: 1.3rem;
+            }
+
             .controls {
                 flex-direction: column;
                 align-items: stretch;
                 padding: 1.25rem;
+                margin-bottom: 1.5rem;
             }
 
             .search-box {
                 width: 100%;
                 margin-bottom: 1rem;
+                font-size: 0.9rem;
+                padding: 0.75rem 1.25rem;
             }
 
             .filter-buttons {
                 justify-content: center;
+                gap: 0.5rem;
+            }
+
+            .filter-btn {
+                padding: 0.6rem 1rem;
+                font-size: 0.8rem;
+                flex: 1;
+                min-width: 60px;
+            }
+
+            .clear-btn {
+                padding: 0.6rem 1rem;
+                font-size: 0.8rem;
+                margin-top: 0.5rem;
+                width: 100%;
             }
 
             .ingredients-grid {
                 grid-template-columns: 1fr;
             }
 
-            .page-title {
-                font-size: 2.25rem;
+            .ingredient-item {
+                padding: 1.25rem;
+            }
+
+            .ingredient-name {
+                font-size: 1rem;
+            }
+
+            .ingredient-description {
+                font-size: 0.9rem;
             }
 
             .result-header, .result-body {
                 padding: 1.5rem;
+            }
+
+            .result-header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .result-date {
+                order: 2;
+            }
+
+            .result-nova {
+                order: 1;
+                align-self: center;
+            }
+
+            .cart-status {
+                font-size: 1rem;
+                padding: 0.6rem 1.25rem;
+            }
+
+            .empty-state {
+                padding: 4rem 1.5rem;
+            }
+
+            .empty-icon {
+                font-size: 3rem;
+            }
+
+            .empty-message {
+                font-size: 1.25rem;
+            }
+
+            .empty-sub {
+                font-size: 1rem;
+            }
+
+            .btn-primary {
+                padding: 1rem 2rem;
+                font-size: 0.95rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .page-title {
+                font-size: 1.75rem;
+            }
+
+            .dashboard-title {
+                font-size: 1.5rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .filter-buttons {
+                flex-wrap: wrap;
+            }
+
+            .filter-btn {
+                flex: none;
+                min-width: 70px;
+            }
+
+            .nova-breakdown {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-container {
+                height: 200px;
             }
         }
     </style>
@@ -806,6 +1031,10 @@
 
     <div class="container">
         <div class="page-header">
+            <button class="top-clear-btn" onclick="clearAllResults()" id="topClearBtn" style="display: none;">
+                <span>🗑️</span>
+                Clear Cart
+            </button>
             <h1 class="page-title">Shopping Cart Analysis</h1>
             <p class="page-subtitle">Comprehensive health analysis of your scanned products</p>
         </div>
@@ -904,7 +1133,6 @@
                 <button class="filter-btn" data-filter="safe">Safe</button>
                 <button class="filter-btn" data-filter="caution">Caution</button>
                 <button class="filter-btn" data-filter="warning">Warning</button>
-                <button class="clear-btn" onclick="clearAllResults()">Clear All</button>
             </div>
         </div>
 
@@ -1088,13 +1316,16 @@
 
         function displayDashboard() {
             const dashboard = document.getElementById('dashboardSection');
+            const topClearBtn = document.getElementById('topClearBtn');
             
             if (cartAnalysis.totalProducts === 0) {
                 dashboard.style.display = 'none';
+                topClearBtn.style.display = 'none';
                 return;
             }
 
             dashboard.style.display = 'block';
+            topClearBtn.style.display = 'flex';
 
             // Update stats
             document.getElementById('totalProducts').textContent = cartAnalysis.totalProducts;
@@ -1484,8 +1715,9 @@
                     recommendations: []
                 };
                 
-                // Hide dashboard and show empty state
+                // Hide dashboard, top button, and show empty state
                 document.getElementById('dashboardSection').style.display = 'none';
+                document.getElementById('topClearBtn').style.display = 'none';
                 showEmptyState();
             }
         }
