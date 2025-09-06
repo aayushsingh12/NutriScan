@@ -352,87 +352,176 @@ async def analyze_with_rag(ingredients: List[str]) -> Dict[str, Any]:
     if not retriever:
         raise HTTPException(status_code=500, detail="RAG system not initialized")
     
-    # Create analysis query
-    query = f"Analyze these food ingredients for health concerns, allergens, additives, and NOVA classification: {', '.join(ingredients)}"
-    
     try:
-        # Get relevant documents (use invoke method if available, fallback to deprecated method)
-        try:
-            docs = retriever.invoke(query)
-        except AttributeError:
-            # Fallback to deprecated method
-            docs = retriever.get_relevant_documents(query)
-        
-        # Analyze ingredients
+        # Initialize response structure
+        analyzed_ingredients = []
         warnings = []
-        nova_group = 1
         additive_count = 0
+        hidden_sugar_count = 0
+        preservative_count = 0
         
-        # Check each ingredient
+        # Define ingredient categories and their descriptions
+        ingredient_categories = {
+            "safe": "Generally recognized as safe for consumption",
+            "caution": "Use with caution, may affect sensitive individuals",
+            "warning": "Contains substances that may have health implications",
+            "allergen": "Known allergen, may cause allergic reactions",
+            "additive": "Artificial additive or preservative",
+            "processing_aid": "Used in food processing",
+            "hidden_sugar": "Contains or breaks down into sugars",
+            "natural": "Minimally processed natural ingredient"
+        }
+        
+        # Analyze each ingredient
         for ingredient in ingredients:
             ingredient_lower = ingredient.lower()
+            ingredient_analysis = {
+                "name": ingredient,
+                "category": "unknown",
+                "safety_level": "unknown",
+                "description": "",
+                "flags": [],
+                "health_implications": []
+            }
             
             # Check for hidden sugars
-            hidden_sugars = ['sugar', 'maltodextrin', 'corn syrup', 'fructose', 'glucose', 'sucrose', 'dextrose']
-            if any(sugar in ingredient_lower for sugar in hidden_sugars):
-                sugar_items = [sugar for sugar in hidden_sugars if sugar in ingredient_lower]
-                warnings.append({
-                    "type": "hidden_sugar",
-                    "message": f"Contains {', '.join(sugar_items)}, which may contribute to hidden sugar content",
-                    "item": ingredient
-                })
+            hidden_sugars = {
+                'sugar': 'Common table sugar',
+                'maltodextrin': 'Highly processed starch derivative',
+                'corn syrup': 'Processed corn-based sweetener',
+                'fructose': 'Fruit sugar',
+                'glucose': 'Simple sugar',
+                'sucrose': 'Table sugar',
+                'dextrose': 'Form of glucose',
+                'syrup': 'Concentrated sugar solution'
+            }
             
-            # Check for additives (E-numbers or specific additives)
-            if ('colour' in ingredient_lower or 'color' in ingredient_lower or 
-                'acidity regulator' in ingredient_lower or 'preservative' in ingredient_lower or
-                re.search(r'\d{3}', ingredient)):
-                additive_count += 1
-                warnings.append({
-                    "type": "additive",
-                    "message": f"Contains food additive: {ingredient}",
-                    "item": ingredient
-                })
+            # Check for additives and E-numbers
+            additives = {
+                'colour': 'Artificial coloring',
+                'flavor': 'Flavor enhancer',
+                'preservative': 'Extends shelf life',
+                'emulsifier': 'Maintains texture',
+                'stabilizer': 'Maintains consistency',
+                'thickener': 'Adds thickness',
+                'acidity regulator': 'Controls acidity'
+            }
+            
+            # Check for common allergens
+            allergens = {
+                'sesame': 'Sesame seeds and derivatives',
+                'soy': 'Soybeans and derivatives',
+                'wheat': 'Wheat and gluten-containing grains',
+                'milk': 'Dairy products',
+                'egg': 'Eggs and egg products',
+                'fish': 'Fish and fish products',
+                'peanut': 'Peanuts and derivatives',
+                'tree nut': 'Tree nuts and derivatives',
+                'celery': 'Celery and derivatives',
+                'mustard': 'Mustard and derivatives'
+            }
+            
+            # Analyze ingredient
+            found_categories = []
+            
+            # Check for hidden sugars
+            for sugar, desc in hidden_sugars.items():
+                if sugar in ingredient_lower:
+                    found_categories.append("hidden_sugar")
+                    ingredient_analysis["flags"].append({
+                        "type": "hidden_sugar",
+                        "name": sugar,
+                        "description": desc
+                    })
+                    hidden_sugar_count += 1
+            
+            # Check for additives
+            for additive, desc in additives.items():
+                if additive in ingredient_lower or re.search(r'E\d{3}', ingredient):
+                    found_categories.append("additive")
+                    ingredient_analysis["flags"].append({
+                        "type": "additive",
+                        "name": additive,
+                        "description": desc
+                    })
+                    additive_count += 1
             
             # Check for allergens
-            allergens = ['sesame', 'soy', 'wheat', 'milk', 'egg', 'fish', 'peanut', 'tree nut']
-            for allergen in allergens:
+            for allergen, desc in allergens.items():
                 if allergen in ingredient_lower:
+                    found_categories.append("allergen")
+                    ingredient_analysis["flags"].append({
+                        "type": "allergen",
+                        "name": allergen,
+                        "description": desc
+                    })
                     warnings.append({
                         "type": "allergen",
-                        "message": f"Contains potential allergen: {allergen}",
+                        "message": f"Contains allergen: {allergen}",
                         "item": ingredient
                     })
+            
+            # Determine safety level
+            if "allergen" in found_categories:
+                ingredient_analysis["safety_level"] = "high_caution"
+            elif "additive" in found_categories or "hidden_sugar" in found_categories:
+                ingredient_analysis["safety_level"] = "moderate_caution"
+            else:
+                ingredient_analysis["safety_level"] = "safe"
+            
+            # Set primary category
+            if "allergen" in found_categories:
+                ingredient_analysis["category"] = "allergen"
+            elif "additive" in found_categories:
+                ingredient_analysis["category"] = "additive"
+            elif "hidden_sugar" in found_categories:
+                ingredient_analysis["category"] = "hidden_sugar"
+            else:
+                ingredient_analysis["category"] = "natural"
+            
+            # Add description based on category
+            ingredient_analysis["description"] = ingredient_categories.get(
+                ingredient_analysis["category"],
+                "Ingredient requires further analysis"
+            )
+            
+            analyzed_ingredients.append(ingredient_analysis)
         
-        # Determine NOVA group
-        if additive_count >= 3 or len(ingredients) >= 8:
+        # Determine NOVA group based on analyzed ingredients
+        if additive_count >= 3 or hidden_sugar_count >= 2:
             nova_group = 4
-            nova_description = "Ultra-processed food due to presence of multiple additives and processed ingredients"
-        elif additive_count >= 1 or any('oil' in ing.lower() or 'salt' in ing.lower() for ing in ingredients):
+            nova_description = "Ultra-processed food with multiple additives and processed ingredients"
+        elif additive_count >= 1 or hidden_sugar_count >= 1:
             nova_group = 3
             nova_description = "Processed food with added ingredients"
-        elif len(ingredients) <= 3:
+        elif len(ingredients) <= 3 and all(ing["category"] == "natural" for ing in analyzed_ingredients):
             nova_group = 1
-            nova_description = "Minimally processed food"
+            nova_description = "Minimally processed natural food"
         else:
             nova_group = 2
             nova_description = "Processed culinary ingredients"
         
-        # Generate health notes
+        # Generate comprehensive health notes
         health_notes = []
-        if nova_group == 4:
-            health_notes.append("Contains ultra-processed elements; monitor intake due to potential health impacts")
-        if any(w['type'] == 'hidden_sugar' for w in warnings):
-            health_notes.append("Contains added sugars which may contribute to daily sugar intake")
-        if any(w['type'] == 'additive' for w in warnings):
-            health_notes.append("Contains food additives - check individual tolerance")
-        
-        health_notes_str = "; ".join(health_notes) if health_notes else "Generally safe when consumed as part of a balanced diet"
+        if nova_group >= 3:
+            health_notes.append("Contains processed ingredients - moderate consumption recommended")
+        if hidden_sugar_count > 0:
+            health_notes.append(f"Contains {hidden_sugar_count} forms of sugar - monitor sugar intake")
+        if additive_count > 0:
+            health_notes.append(f"Contains {additive_count} additives - check individual sensitivities")
         
         return {
+            "ingredient_analysis": analyzed_ingredients,
             "warnings": warnings,
             "nova_group": nova_group,
             "nova_description": nova_description,
-            "health_notes": health_notes_str
+            "health_notes": "; ".join(health_notes) if health_notes else "Generally safe when consumed as part of a balanced diet",
+            "summary": {
+                "total_ingredients": len(ingredients),
+                "additives_count": additive_count,
+                "hidden_sugars_count": hidden_sugar_count,
+                "allergens_count": len([w for w in warnings if w["type"] == "allergen"])
+            }
         }
         
     except Exception as e:

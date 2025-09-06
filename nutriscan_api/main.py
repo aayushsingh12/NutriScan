@@ -1,20 +1,98 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, File, UploadFile
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 import requests
 import json
 import os
 from pathlib import Path
 import logging
+import shutil
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from gem import extract_ingredients_gemini
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="NutriScanner API")
 
+# Mount the static directory
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.get("/")
-def root():
+async def root():
     return {"message": "NutriScanner API running"}
+
+@app.post("/upload")
+async def upload_image(file: UploadFile = File(...)):
+    try:
+        # Create a temporary file to save the uploaded image
+        temp_path = f"temp_{file.filename}"
+        with open(temp_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        # Extract ingredients using the Gemini model
+        ingredients_result = extract_ingredients_gemini(temp_path)
+        
+        # Clean up the temporary file
+        os.remove(temp_path)
+        
+        # If there are ingredients, send them to the RAG system
+        if ingredients_result and "ingredients" in ingredients_result:
+            try:
+                # Prepare payload for RAG
+                rag_payload = {
+                    "ingredients": ingredients_result["ingredients"]
+                }
+                
+                # Try different RAG endpoints
+                rag_endpoints = [
+                    "http://localhost:9000/analyze_ingredients",
+                    "http://localhost:8000/analyze_ingredients"
+                ]
+                
+                rag_response = None
+                for rag_url in rag_endpoints:
+                    try:
+                        r = requests.post(rag_url, json=rag_payload, timeout=30)
+                        r.raise_for_status()
+                        rag_response = r.json()
+                        break
+                    except requests.exceptions.RequestException:
+                        continue
+                
+                # Combine results
+                result = {
+                    "extracted_ingredients": ingredients_result,
+                    "rag_analysis": rag_response if rag_response else {"error": "RAG analysis failed"}
+                }
+                
+                return JSONResponse(content=result)
+            
+            except Exception as e:
+                return JSONResponse(
+                    content={"error": f"Error during RAG analysis: {str(e)}"},
+                    status_code=500
+                )
+        
+        return JSONResponse(content=ingredients_result)
+    
+    except Exception as e:
+        return JSONResponse(
+            content={"error": f"Error processing image: {str(e)}"},
+            status_code=500
+        )
 
 
 @app.get("/openfoodfacts")

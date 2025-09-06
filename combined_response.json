@@ -25,15 +25,9 @@
     "ingredients": [
       "Acidity Regulators (330, 331, 452, 385, 100, 211, 202, 955, 950, 129)"
     ],
-    "warnings": [
-      {
-        "type": "additive",
-        "message": "Contains food additive: Acidity Regulators (330, 331, 452, 385, 100, 211, 202, 955, 950, 129)",
-        "item": "Acidity Regulators (330, 331, 452, 385, 100, 211, 202, 955, 950, 129)"
-      }
-    ],
+    "warnings": [],
     "nova_group": 3,
     "nova_description": "Processed food with added ingredients",
-    "health_notes": "Contains food additives - check individual tolerance"
+    "health_notes": "Contains processed ingredients - moderate consumption recommended; Contains 1 additives - check individual sensitivities"
   }
 }
