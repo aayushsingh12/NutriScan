@@ -578,6 +578,40 @@
         .ingredient-item.caution { border-left-color: #F59E0B; }
         .ingredient-item.warning { border-left-color: #EF4444; }
 
+        /* Personal health concern styles */
+        .ingredient-item.personal-concern {
+            border: 2px solid #EF4444;
+            background: linear-gradient(145deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+        }
+
+        .personal-alert {
+            color: #EF4444;
+            font-size: 1.2rem;
+            margin-left: 0.5rem;
+            animation: pulse 2s infinite;
+        }
+
+        .personal-flags {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .personal-flag-item {
+            color: #FCA5A5;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+            font-weight: 500;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
         .ingredient-name {
             font-weight: 600;
             margin-bottom: 0.75rem;
@@ -1166,6 +1200,107 @@
             recommendations: []
         };
 
+        // Load health profile for allergen checking
+        function getHealthProfile() {
+            const saved = localStorage.getItem('nutriscan_health_profile');
+            if (saved) {
+                return JSON.parse(saved);
+            }
+            return { allergies: {}, health: {}, customAllergies: '' };
+        }
+
+        // Check if ingredient contains allergens
+        function checkAllergens(ingredientName, description) {
+            const profile = getHealthProfile();
+            const allergenFlags = [];
+            
+            // Check common allergens
+            const allergenKeywords = {
+                'milk': ['milk', 'dairy', 'lactose', 'casein', 'whey', 'cream', 'butter', 'cheese'],
+                'eggs': ['egg', 'albumin', 'lecithin', 'mayonnaise'],
+                'peanuts': ['peanut', 'groundnut', 'arachis'],
+                'tree_nuts': ['almond', 'walnut', 'cashew', 'pistachio', 'hazelnut', 'pecan', 'macadamia', 'brazil nut'],
+                'soy': ['soy', 'soja', 'tofu', 'tempeh', 'miso', 'soybean'],
+                'wheat': ['wheat', 'gluten', 'flour', 'bread', 'pasta', 'barley', 'rye', 'oats'],
+                'fish': ['fish', 'salmon', 'tuna', 'cod', 'anchovy', 'sardine'],
+                'shellfish': ['shrimp', 'crab', 'lobster', 'clam', 'mussel', 'oyster', 'scallop'],
+                'sesame': ['sesame', 'tahini', 'sesame oil'],
+                'sulfites': ['sulfite', 'sulfur dioxide', 'sodium sulfite', 'potassium sulfite']
+            };
+            
+            // Check against user's allergen profile
+            Object.keys(profile.allergies).forEach(allergenId => {
+                if (profile.allergies[allergenId]?.enabled) {
+                    const keywords = allergenKeywords[allergenId] || [allergenId];
+                    const searchText = (ingredientName + ' ' + (description || '')).toLowerCase();
+                    
+                    keywords.forEach(keyword => {
+                        if (searchText.includes(keyword.toLowerCase())) {
+                            allergenFlags.push({
+                                type: 'ALLERGEN ALERT',
+                                allergen: allergenId.replace('_', ' ').toUpperCase(),
+                                severity: 'critical'
+                            });
+                        }
+                    });
+                }
+            });
+            
+            // Check custom allergies
+            if (profile.customAllergies) {
+                const customList = profile.customAllergies.split(',').map(a => a.trim().toLowerCase());
+                const searchText = (ingredientName + ' ' + (description || '')).toLowerCase();
+                
+                customList.forEach(custom => {
+                    if (custom && searchText.includes(custom)) {
+                        allergenFlags.push({
+                            type: 'CUSTOM ALLERGEN',
+                            allergen: custom.toUpperCase(),
+                            severity: 'critical'
+                        });
+                    }
+                });
+            }
+            
+            return allergenFlags;
+        }
+
+        // Check health condition concerns
+        function checkHealthConcerns(ingredientName, description) {
+            const profile = getHealthProfile();
+            const healthFlags = [];
+            
+            // Health condition keywords
+            const healthKeywords = {
+                'diabetes': ['sugar', 'glucose', 'fructose', 'corn syrup', 'high fructose', 'sucrose', 'dextrose'],
+                'hypertension': ['sodium', 'salt', 'monosodium glutamate', 'msg', 'sodium chloride', 'sodium benzoate'],
+                'heart_disease': ['trans fat', 'hydrogenated', 'palm oil', 'saturated fat', 'cholesterol'],
+                'kidney_disease': ['phosphorus', 'potassium', 'protein', 'sodium'],
+                'liver_disease': ['alcohol', 'artificial colors', 'preservatives'],
+                'pregnancy': ['caffeine', 'alcohol', 'artificial sweeteners', 'aspartame', 'saccharin']
+            };
+            
+            Object.keys(profile.health).forEach(conditionId => {
+                if (profile.health[conditionId]?.enabled) {
+                    const keywords = healthKeywords[conditionId] || [];
+                    const searchText = (ingredientName + ' ' + (description || '')).toLowerCase();
+                    
+                    keywords.forEach(keyword => {
+                        if (searchText.includes(keyword.toLowerCase())) {
+                            healthFlags.push({
+                                type: 'HEALTH CONCERN',
+                                condition: conditionId.replace('_', ' ').toUpperCase(),
+                                ingredient: keyword.toUpperCase(),
+                                severity: 'high'
+                            });
+                        }
+                    });
+                }
+            });
+            
+            return healthFlags;
+        }
+
         // Navbar scroll effect
         window.addEventListener('scroll', () => {
             const navbar = document.getElementById('navbar');
@@ -1676,14 +1811,38 @@
                         </div>
                         <div class="result-body">
                             <div class="ingredients-grid">
-                                ${ingredients.map(ingredient => `
-                                    <div class="ingredient-item ${ingredient.safety_level || 'unknown'}">
-                                        <div class="ingredient-name">${ingredient.name}</div>
+                                ${ingredients.map(ingredient => {
+                                    // Check for allergens and health concerns
+                                    const allergenFlags = checkAllergens(ingredient.name, ingredient.description);
+                                    const healthFlags = checkHealthConcerns(ingredient.name, ingredient.description);
+                                    const personalFlags = [...allergenFlags, ...healthFlags];
+                                    
+                                    // Determine if this ingredient has personal concerns
+                                    const hasPersonalConcerns = personalFlags.length > 0;
+                                    const personalFlagClass = hasPersonalConcerns ? 'personal-concern' : '';
+                                    
+                                    return `
+                                    <div class="ingredient-item ${ingredient.safety_level || 'unknown'} ${personalFlagClass}">
+                                        <div class="ingredient-name">
+                                            ${ingredient.name}
+                                            ${hasPersonalConcerns ? '<span class="personal-alert">⚠️</span>' : ''}
+                                        </div>
                                         <div class="ingredient-category">${ingredient.category || 'Unknown Category'}</div>
                                         <div class="safety-level safety-${ingredient.safety_level || 'unknown'}">
                                             ${(ingredient.safety_level || 'UNKNOWN').toUpperCase()}
                                         </div>
                                         <div class="ingredient-description">${ingredient.description || 'No description available.'}</div>
+                                        ${personalFlags.length > 0 ? `
+                                            <div class="personal-flags">
+                                                <strong style="color: #EF4444; display: block; margin-bottom: 0.5rem;">⚠️ Personal Health Alerts:</strong>
+                                                ${personalFlags.map(flag => `
+                                                    <div class="personal-flag-item">
+                                                        <strong>${flag.type}:</strong> 
+                                                        ${flag.allergen ? `Contains ${flag.allergen}` : `${flag.condition} - Avoid ${flag.ingredient}`}
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                        ` : ''}
                                         ${ingredient.flags && ingredient.flags.length > 0 ? `
                                             <div class="ingredient-flags">
                                                 ${ingredient.flags.map(flag => `
@@ -1691,8 +1850,8 @@
                                                 `).join('')}
                                             </div>
                                         ` : ''}
-                                    </div>
-                                `).join('')}
+                                    </div>`;
+                                }).join('')}
                             </div>
                             ${result.health_notes ? `
                                 <div class="health-notes">
