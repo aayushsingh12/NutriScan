@@ -1,4 +1,4 @@
 node_modules/
 nutriscan_env/
-.env/
+.env
 *.log
