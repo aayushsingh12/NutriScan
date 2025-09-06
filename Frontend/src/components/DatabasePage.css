@@ -1,0 +1,159 @@
+/* Container for entire page */
+.database-page-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e0e66, #301b89, #2d0f6f);
+  color: white;
+}
+
+/* Main card */
+.database-card {
+  background: rgba(20, 20, 60, 0.6);
+  padding: 30px;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 800px;
+  box-shadow: 0 0 30px rgba(0, 255, 255, 0.4);
+  text-align: center;
+  position: relative;
+}
+
+/* Header with title and clear all */
+.database-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.database-title {
+  font-size: 2rem;
+  margin-bottom: 10px;
+  color: #00ffcc;
+  text-align: center;
+  flex-grow: 1;
+}
+
+/* Clear All button */
+.clear-all-btn {
+  position: absolute;
+  right: 0;
+  top: 0;
+  background: rgba(255, 50, 50, 0.2);
+  border: none;
+  color: #ff6666;
+  font-size: 0.9rem;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clear-all-btn:hover {
+  background: rgba(255, 50, 50, 0.4);
+  color: #ffcccc;
+  transform: scale(1.05);
+  box-shadow: 0 0 12px rgba(255, 0, 0, 0.6);
+}
+
+/* Subtitle */
+.database-subtitle {
+  font-size: 1rem;
+  margin-bottom: 25px;
+  color: #b3b3ff;
+  text-align: center;
+}
+
+/* No data message */
+.no-data-message {
+  color: #ffcccc;
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+/* List container */
+.database-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Individual scanned item */
+.database-item {
+  background: rgba(40, 40, 80, 0.8);
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+  text-align: left;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+}
+
+.database-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 0 25px rgba(0, 255, 255, 0.5);
+}
+
+/* Item header */
+.database-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.item-name {
+  font-size: 1.4rem;
+  color: #00ffcc;
+}
+
+/* Delete button */
+.delete-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #ff6666;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.delete-btn:hover {
+  transform: scale(1.2);
+  color: #ff3333;
+}
+
+/* Warning title */
+.warning-title {
+  font-size: 1rem;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+/* Warning list */
+.warnings-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.warning-item {
+  background: rgba(255, 0, 0, 0.15);
+  padding: 8px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  color: #ff6666;
+  font-size: 0.95rem;
+}
+
+.warning-type {
+  font-weight: bold;
+}
+
+/* No warnings */
+.no-warnings {
+  color: #66ff66;
+  font-weight: bold;
+}

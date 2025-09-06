@@ -1,0 +1,119 @@
+@import url('../GlobalStyles.css');
+
+.database-page-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 2rem;
+}
+
+.content-card.large {
+    max-width: 800px;
+    padding: 3rem;
+}
+
+.database-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+.database-subtitle {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1rem;
+    margin-bottom: 2rem;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.clear-all-btn {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    border-radius: 9999px;
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.clear-all-btn:hover {
+    background: rgba(255, 255, 255, 0.4);
+    transform: scale(1.05);
+}
+
+.no-data-message {
+    color: rgba(255, 255, 255, 0.7);
+    font-style: italic;
+    padding: 2rem;
+    border: 1px dashed rgba(255, 255, 255, 0.3);
+    border-radius: 1rem;
+}
+
+.database-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 100%;
+}
+
+.database-item {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    padding: 1.5rem;
+    border-radius: 1.5rem;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    text-align: left;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.database-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+}
+
+.item-name {
+    color: #10B981;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.item-details {
+    color: white;
+}
+
+.item-details ul {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0 0;
+}
+
+.item-details li {
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.delete-item-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #F87171;
+    cursor: pointer;
+    float: right;
+    transition: color 0.3s ease;
+}
+
+.delete-item-btn:hover {
+    color: #DC2626;
+}
