@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>NutriScan - Scan Results</title>
+    <title>NutriScan - Shopping Cart Analysis</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         
@@ -107,14 +108,274 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 6rem 2rem 2rem;
         }
 
+        /* Cart Analysis Dashboard */
+        .dashboard-section {
+            margin-bottom: 3rem;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .dashboard-header {
+            background: linear-gradient(135deg, #06B6D4, #3B82F6, #8B5CF6);
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .dashboard-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .dashboard-subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.2rem;
+        }
+
+        .cart-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-top: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .cart-status.healthy {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10B981;
+            border: 2px solid rgba(16, 185, 129, 0.5);
+        }
+
+        .cart-status.moderate {
+            background: rgba(245, 158, 11, 0.2);
+            color: #F59E0B;
+            border: 2px solid rgba(245, 158, 11, 0.5);
+        }
+
+        .cart-status.unhealthy {
+            background: rgba(239, 68, 68, 0.2);
+            color: #EF4444;
+            border: 2px solid rgba(239, 68, 68, 0.5);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            padding: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #06B6D4, #3B82F6, #8B5CF6);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        .charts-section {
+            padding: 0 2rem 2rem;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .chart-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        .alerts-section {
+            background: linear-gradient(145deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 2rem;
+        }
+
+        .alerts-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #EF4444;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .alert-item {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid #EF4444;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+        }
+
+        .alert-product {
+            font-weight: 600;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .alert-reason {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+
+        .recommendations-section {
+            background: linear-gradient(145deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 2rem;
+        }
+
+        .recommendations-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #10B981;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .recommendation-item {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid #10B981;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+        }
+
+        .recommendation-text {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .nova-breakdown {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .nova-item {
+            text-align: center;
+            padding: 1rem;
+            border-radius: 12px;
+            border: 2px solid;
+        }
+
+        .nova-item.nova-1 {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: #10B981;
+            color: #10B981;
+        }
+
+        .nova-item.nova-2 {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: #F59E0B;
+            color: #F59E0B;
+        }
+
+        .nova-item.nova-3 {
+            background: rgba(251, 146, 60, 0.1);
+            border-color: #FB923C;
+            color: #FB923C;
+        }
+
+        .nova-item.nova-4 {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: #EF4444;
+            color: #EF4444;
+        }
+
+        .nova-count {
+            font-size: 2rem;
+            font-weight: 800;
+            display: block;
+        }
+
+        .nova-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+
         .page-header {
             text-align: center;
-            margin-bottom: 3rem;
+            margin-bottom: 2rem;
         }
 
         .page-title {
@@ -545,8 +806,95 @@
 
     <div class="container">
         <div class="page-header">
-            <h1 class="page-title">Scan Results</h1>
-            <p class="page-subtitle">View and manage your food label analysis history</p>
+            <h1 class="page-title">Shopping Cart Analysis</h1>
+            <p class="page-subtitle">Comprehensive health analysis of your scanned products</p>
+        </div>
+
+        <!-- Cart Analysis Dashboard -->
+        <div class="dashboard-section" id="dashboardSection" style="display: none;">
+            <div class="dashboard-header">
+                <h2 class="dashboard-title">Your Cart Health Score</h2>
+                <p class="dashboard-subtitle">AI-powered analysis of your food selections</p>
+                <div class="cart-status" id="cartStatus">
+                    <span id="cartStatusIcon">🔍</span>
+                    <span id="cartStatusText">Analyzing...</span>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-icon">📦</span>
+                    <div class="stat-number" id="totalProducts">0</div>
+                    <div class="stat-label">Products Scanned</div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-icon">🧪</span>
+                    <div class="stat-number" id="totalIngredients">0</div>
+                    <div class="stat-label">Ingredients Analyzed</div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-icon">⚠️</span>
+                    <div class="stat-number" id="dangerousIngredients">0</div>
+                    <div class="stat-label">Concerning Ingredients</div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-icon">💚</span>
+                    <div class="stat-number" id="healthScore">0</div>
+                    <div class="stat-label">Health Score (/100)</div>
+                </div>
+            </div>
+
+            <div class="charts-section">
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3 class="chart-title">Safety Level Distribution</h3>
+                        <div class="chart-container">
+                            <canvas id="safetyChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3 class="chart-title">NOVA Processing Levels</h3>
+                        <div class="chart-container">
+                            <canvas id="novaChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nova-breakdown">
+                    <div class="nova-item nova-1">
+                        <span class="nova-count" id="nova1Count">0</span>
+                        <div class="nova-label">NOVA 1<br>Unprocessed</div>
+                    </div>
+                    <div class="nova-item nova-2">
+                        <span class="nova-count" id="nova2Count">0</span>
+                        <div class="nova-label">NOVA 2<br>Basic Processing</div>
+                    </div>
+                    <div class="nova-item nova-3">
+                        <span class="nova-count" id="nova3Count">0</span>
+                        <div class="nova-label">NOVA 3<br>Processed</div>
+                    </div>
+                    <div class="nova-item nova-4">
+                        <span class="nova-count" id="nova4Count">0</span>
+                        <div class="nova-label">NOVA 4<br>Ultra-processed</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alerts-section" id="alertsSection" style="display: none;">
+                <h3 class="alerts-title">
+                    <span>⚠️</span>
+                    Health Alerts
+                </h3>
+                <div id="alertsList"></div>
+            </div>
+
+            <div class="recommendations-section">
+                <h3 class="recommendations-title">
+                    <span>💡</span>
+                    Recommendations
+                </h3>
+                <div id="recommendationsList"></div>
+            </div>
         </div>
 
         <div class="controls">
@@ -575,6 +923,19 @@
     <script>
         let allResults = [];
         let filteredResults = [];
+        let safetyChart, novaChart;
+
+        // Cart Analysis Data
+        let cartAnalysis = {
+            totalProducts: 0,
+            totalIngredients: 0,
+            dangerousIngredients: 0,
+            healthScore: 0,
+            safetyBreakdown: { safe: 0, caution: 0, concern: 0 },
+            novaBreakdown: { 1: 0, 2: 0, 3: 0, 4: 0 },
+            alerts: [],
+            recommendations: []
+        };
 
         // Navbar scroll effect
         window.addEventListener('scroll', () => {
@@ -608,9 +969,311 @@
             if (stored) {
                 allResults = JSON.parse(stored);
                 filteredResults = [...allResults];
+                
+                // Analyze cart data
+                analyzeCart();
+                
+                // Display dashboard and results
+                displayDashboard();
                 displayResults();
             } else {
                 showEmptyState();
+            }
+        }
+
+        function analyzeCart() {
+            // Reset analysis
+            cartAnalysis = {
+                totalProducts: allResults.length,
+                totalIngredients: 0,
+                dangerousIngredients: 0,
+                healthScore: 0,
+                safetyBreakdown: { safe: 0, caution: 0, concern: 0 },
+                novaBreakdown: { 1: 0, 2: 0, 3: 0, 4: 0 },
+                alerts: [],
+                recommendations: []
+            };
+
+            let totalSafetyScore = 0;
+            let ingredientCount = 0;
+
+            allResults.forEach(result => {
+                // Count NOVA levels
+                const nova = result.nova_group || 4;
+                cartAnalysis.novaBreakdown[nova]++;
+
+                // Analyze ingredients
+                if (result.ingredient_analysis) {
+                    result.ingredient_analysis.forEach(ingredient => {
+                        ingredientCount++;
+                        cartAnalysis.totalIngredients++;
+
+                        const safety = ingredient.safety_level || 'unknown';
+                        
+                        // Count safety levels
+                        if (safety === 'safe') {
+                            cartAnalysis.safetyBreakdown.safe++;
+                            totalSafetyScore += 100;
+                        } else if (safety === 'caution') {
+                            cartAnalysis.safetyBreakdown.caution++;
+                            totalSafetyScore += 60;
+                        } else if (safety === 'concern') {
+                            cartAnalysis.safetyBreakdown.concern++;
+                            cartAnalysis.dangerousIngredients++;
+                            totalSafetyScore += 20;
+                            
+                            // Add to alerts
+                            cartAnalysis.alerts.push({
+                                product: result.product_name || 'Unknown Product',
+                                ingredient: ingredient.name,
+                                reason: ingredient.health_impact || 'Potential health concerns identified'
+                            });
+                        }
+                    });
+                }
+            });
+
+            // Calculate overall health score
+            if (ingredientCount > 0) {
+                cartAnalysis.healthScore = Math.round(totalSafetyScore / ingredientCount);
+            }
+
+            // Generate recommendations
+            generateRecommendations();
+        }
+
+        function generateRecommendations() {
+            cartAnalysis.recommendations = [];
+
+            const { novaBreakdown, safetyBreakdown, healthScore } = cartAnalysis;
+
+            // NOVA-based recommendations
+            if (novaBreakdown[4] > novaBreakdown[1] + novaBreakdown[2]) {
+                cartAnalysis.recommendations.push(
+                    "Consider reducing ultra-processed foods (NOVA 4) and choosing more whole foods (NOVA 1-2)."
+                );
+            }
+
+            // Safety-based recommendations
+            if (safetyBreakdown.concern > 0) {
+                cartAnalysis.recommendations.push(
+                    `You have ${safetyBreakdown.concern} concerning ingredients. Consider finding alternatives for products with these ingredients.`
+                );
+            }
+
+            // Health score recommendations
+            if (healthScore < 50) {
+                cartAnalysis.recommendations.push(
+                    "Your cart has a low health score. Focus on products with fewer additives and preservatives."
+                );
+            } else if (healthScore >= 80) {
+                cartAnalysis.recommendations.push(
+                    "Great job! Your cart shows healthy food choices with minimal concerning ingredients."
+                );
+            }
+
+            // Specific recommendations
+            if (cartAnalysis.totalProducts > 10) {
+                cartAnalysis.recommendations.push(
+                    "You've scanned many products! Consider creating a favorites list of the healthiest options."
+                );
+            }
+
+            if (cartAnalysis.recommendations.length === 0) {
+                cartAnalysis.recommendations.push(
+                    "Keep scanning products to get personalized health recommendations!"
+                );
+            }
+        }
+
+        function displayDashboard() {
+            const dashboard = document.getElementById('dashboardSection');
+            
+            if (cartAnalysis.totalProducts === 0) {
+                dashboard.style.display = 'none';
+                return;
+            }
+
+            dashboard.style.display = 'block';
+
+            // Update stats
+            document.getElementById('totalProducts').textContent = cartAnalysis.totalProducts;
+            document.getElementById('totalIngredients').textContent = cartAnalysis.totalIngredients;
+            document.getElementById('dangerousIngredients').textContent = cartAnalysis.dangerousIngredients;
+            document.getElementById('healthScore').textContent = cartAnalysis.healthScore;
+
+            // Update NOVA breakdown
+            document.getElementById('nova1Count').textContent = cartAnalysis.novaBreakdown[1];
+            document.getElementById('nova2Count').textContent = cartAnalysis.novaBreakdown[2];
+            document.getElementById('nova3Count').textContent = cartAnalysis.novaBreakdown[3];
+            document.getElementById('nova4Count').textContent = cartAnalysis.novaBreakdown[4];
+
+            // Update cart status
+            updateCartStatus();
+
+            // Update alerts
+            displayAlerts();
+
+            // Update recommendations
+            displayRecommendations();
+
+            // Initialize charts
+            setTimeout(() => {
+                initializeCharts();
+            }, 100);
+        }
+
+        function updateCartStatus() {
+            const statusElement = document.getElementById('cartStatus');
+            const iconElement = document.getElementById('cartStatusIcon');
+            const textElement = document.getElementById('cartStatusText');
+
+            const { healthScore } = cartAnalysis;
+
+            if (healthScore >= 75) {
+                statusElement.className = 'cart-status healthy';
+                iconElement.textContent = '💚';
+                textElement.textContent = 'Healthy Cart';
+            } else if (healthScore >= 50) {
+                statusElement.className = 'cart-status moderate';
+                iconElement.textContent = '⚠️';
+                textElement.textContent = 'Moderate Cart';
+            } else {
+                statusElement.className = 'cart-status unhealthy';
+                iconElement.textContent = '🚨';
+                textElement.textContent = 'Needs Improvement';
+            }
+        }
+
+        function displayAlerts() {
+            const alertsSection = document.getElementById('alertsSection');
+            const alertsList = document.getElementById('alertsList');
+
+            if (cartAnalysis.alerts.length === 0) {
+                alertsSection.style.display = 'none';
+                return;
+            }
+
+            alertsSection.style.display = 'block';
+            alertsList.innerHTML = cartAnalysis.alerts.map(alert => `
+                <div class="alert-item">
+                    <div class="alert-product">${alert.product}</div>
+                    <div class="alert-reason">Contains <strong>${alert.ingredient}</strong>: ${alert.reason}</div>
+                </div>
+            `).join('');
+        }
+
+        function displayRecommendations() {
+            const recommendationsList = document.getElementById('recommendationsList');
+            recommendationsList.innerHTML = cartAnalysis.recommendations.map(rec => `
+                <div class="recommendation-item">
+                    <div class="recommendation-text">${rec}</div>
+                </div>
+            `).join('');
+        }
+
+        function initializeCharts() {
+            // Safety Chart
+            const safetyCtx = document.getElementById('safetyChart')?.getContext('2d');
+            if (safetyCtx && safetyChart) {
+                safetyChart.destroy();
+            }
+            
+            if (safetyCtx) {
+                safetyChart = new Chart(safetyCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Safe', 'Caution', 'Concern'],
+                        datasets: [{
+                            data: [
+                                cartAnalysis.safetyBreakdown.safe,
+                                cartAnalysis.safetyBreakdown.caution,
+                                cartAnalysis.safetyBreakdown.concern
+                            ],
+                            backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
+                            borderColor: ['#059669', '#D97706', '#DC2626'],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: 'white',
+                                    font: {
+                                        size: 12,
+                                        weight: '600'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // NOVA Chart
+            const novaCtx = document.getElementById('novaChart')?.getContext('2d');
+            if (novaCtx && novaChart) {
+                novaChart.destroy();
+            }
+            
+            if (novaCtx) {
+                novaChart = new Chart(novaCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['NOVA 1', 'NOVA 2', 'NOVA 3', 'NOVA 4'],
+                        datasets: [{
+                            label: 'Products',
+                            data: [
+                                cartAnalysis.novaBreakdown[1],
+                                cartAnalysis.novaBreakdown[2],
+                                cartAnalysis.novaBreakdown[3],
+                                cartAnalysis.novaBreakdown[4]
+                            ],
+                            backgroundColor: ['#10B981', '#F59E0B', '#FB923C', '#EF4444'],
+                            borderColor: ['#059669', '#D97706', '#EA580C', '#DC2626'],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: 'white',
+                                    font: {
+                                        size: 11
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: 'white',
+                                    font: {
+                                        size: 11,
+                                        weight: '600'
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                }
+                            }
+                        }
+                    }
+                });
             }
         }
 
@@ -808,6 +1471,21 @@
                 localStorage.removeItem('nutriscan_results');
                 allResults = [];
                 filteredResults = [];
+                
+                // Reset cart analysis
+                cartAnalysis = {
+                    totalProducts: 0,
+                    totalIngredients: 0,
+                    dangerousIngredients: 0,
+                    healthScore: 0,
+                    safetyBreakdown: { safe: 0, caution: 0, concern: 0 },
+                    novaBreakdown: { 1: 0, 2: 0, 3: 0, 4: 0 },
+                    alerts: [],
+                    recommendations: []
+                };
+                
+                // Hide dashboard and show empty state
+                document.getElementById('dashboardSection').style.display = 'none';
                 showEmptyState();
             }
         }
@@ -830,6 +1508,9 @@
             
             // If we're on the results page, refresh the display
             if (window.location.pathname.includes('results.html')) {
+                // Re-analyze cart and refresh display
+                analyzeCart();
+                displayDashboard();
                 loadResults();
             }
         }
