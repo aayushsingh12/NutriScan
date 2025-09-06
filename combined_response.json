@@ -1,21 +1,38 @@
 {
   "top_product": {
     "ingredients": [
-      "water",
-      "sugar",
-      "carbonic acid",
-      "colour e150d",
-      "acidifier phosphoric acid",
-      "natural flavor",
-      "aroma caffeine"
+      "Carbonated Water",
+      "Sugar",
+      "Acidity Regulators E330",
+      "E331",
+      "Flavour (Natural and Nature Identical Flavouring substances)",
+      "Sequestrants E452",
+      "E385",
+      "Taurine",
+      "Caffeine (29 mg/100 ml)",
+      "Preservatives E211",
+      "E202",
+      "Sweeteners E955",
+      "E950",
+      "Colour E129",
+      "Inositol",
+      "Vitamins Premix."
     ],
     "nova_group": 4
   },
   "rag_analysis": {
-    "product_name": "water",
+    "product_name": "Food Product",
     "ingredient_analyses": [
       {
-        "name": "water sugar carbonic acid colour e150d acidifier phosphoric acid natural flavor aroma caffeine",
+        "name": "Carbonated Water",
+        "classification": "unknown",
+        "safety_level": "safe",
+        "detailed_description": "Carbonated Water - ingredient analysis in progress.",
+        "health_impact": "Health impact assessment pending detailed analysis.",
+        "flags": []
+      },
+      {
+        "name": "Sugar",
         "classification": "refined_sugar",
         "safety_level": "caution",
         "detailed_description": "Refined white sugar (sucrose) extracted from sugar cane or sugar beets through industrial processing involving chemical purification.",
@@ -37,14 +54,205 @@
             "description": "Feeds harmful bacteria causing tooth decay"
           }
         ]
+      },
+      {
+        "name": "Acidity Regulators E330",
+        "classification": "acidity_regulator",
+        "safety_level": "caution",
+        "detailed_description": "Acidity Regulators E330 - chemical compound used to regulate food acidity and pH levels. Contains numbered food additive indicating industrial processing.",
+        "health_impact": "Used to control food pH but may cause digestive sensitivity in some individuals.",
+        "flags": [
+          {
+            "severity": "low",
+            "category": "digestive",
+            "description": "May cause digestive sensitivity"
+          },
+          {
+            "severity": "medium",
+            "category": "additive",
+            "description": "Numbered food additive with technological function"
+          }
+        ]
+      },
+      {
+        "name": "E331",
+        "classification": "food_additive",
+        "safety_level": "caution",
+        "detailed_description": "E331 - ingredient analysis in progress. Contains numbered food additive indicating industrial processing.",
+        "health_impact": "Health impact assessment pending detailed analysis.",
+        "flags": [
+          {
+            "severity": "medium",
+            "category": "additive",
+            "description": "Numbered food additive with technological function"
+          }
+        ]
+      },
+      {
+        "name": "Flavour (Natural and Nature Identical Flavouring substances)",
+        "classification": "unknown",
+        "safety_level": "safe",
+        "detailed_description": "Flavour (Natural and Nature Identical Flavouring substances) - ingredient analysis in progress.",
+        "health_impact": "Health impact assessment pending detailed analysis.",
+        "flags": []
+      },
+      {
+        "name": "Sequestrants E452",
+        "classification": "food_additive",
+        "safety_level": "caution",
+        "detailed_description": "Sequestrants E452 - ingredient analysis in progress. Contains numbered food additive indicating industrial processing.",
+        "health_impact": "Health impact assessment pending detailed analysis.",
+        "flags": [
+          {
+            "severity": "medium",
+            "category": "additive",
+            "description": "Numbered food additive with technological function"
+          }
+        ]
+      },
+      {
+        "name": "E385",
+        "classification": "food_additive",
+        "safety_level": "caution",
+        "detailed_description": "E385 - ingredient analysis in progress. Contains numbered food additive indicating industrial processing.",
+        "health_impact": "Health impact assessment pending detailed analysis.",
+        "flags": [
+          {
+            "severity": "medium",
+            "category": "additive",
+            "description": "Numbered food additive with technological function"
+          }
+        ]
+      },
+      {
+        "name": "Taurine",
+        "classification": "unknown",
+        "safety_level": "safe",
+        "detailed_description": "Taurine - ingredient analysis in progress.",
+        "health_impact": "Health impact assessment pending detailed analysis.",
+        "flags": []
+      },
+      {
+        "name": "Caffeine (29 mg/100 ml)",
+        "classification": "food_additive",
+        "safety_level": "caution",
+        "detailed_description": "Caffeine (29 mg/100 ml) - ingredient analysis in progress. Contains numbered food additive indicating industrial processing.",
+        "health_impact": "Health impact assessment pending detailed analysis.",
+        "flags": [
+          {
+            "severity": "medium",
+            "category": "additive",
+            "description": "Numbered food additive with technological function"
+          }
+        ]
+      },
+      {
+        "name": "Preservatives E211",
+        "classification": "chemical_preservative",
+        "safety_level": "caution",
+        "detailed_description": "Preservatives E211 - synthetic preservative used to extend shelf life by inhibiting microbial growth. Contains numbered food additive indicating industrial processing.",
+        "health_impact": "May disrupt gut microbiome balance and cause allergic reactions in sensitive individuals.",
+        "flags": [
+          {
+            "severity": "medium",
+            "category": "preservative",
+            "description": "Synthetic preservative may affect gut health"
+          },
+          {
+            "severity": "medium",
+            "category": "additive",
+            "description": "Numbered food additive with technological function"
+          }
+        ]
+      },
+      {
+        "name": "E202",
+        "classification": "food_additive",
+        "safety_level": "caution",
+        "detailed_description": "E202 - ingredient analysis in progress. Contains numbered food additive indicating industrial processing.",
+        "health_impact": "Health impact assessment pending detailed analysis.",
+        "flags": [
+          {
+            "severity": "medium",
+            "category": "additive",
+            "description": "Numbered food additive with technological function"
+          }
+        ]
+      },
+      {
+        "name": "Sweeteners E955",
+        "classification": "food_additive",
+        "safety_level": "caution",
+        "detailed_description": "Sweeteners E955 - ingredient analysis in progress. Contains numbered food additive indicating industrial processing.",
+        "health_impact": "Health impact assessment pending detailed analysis.",
+        "flags": [
+          {
+            "severity": "medium",
+            "category": "additive",
+            "description": "Numbered food additive with technological function"
+          }
+        ]
+      },
+      {
+        "name": "E950",
+        "classification": "food_additive",
+        "safety_level": "caution",
+        "detailed_description": "E950 - ingredient analysis in progress. Contains numbered food additive indicating industrial processing.",
+        "health_impact": "Health impact assessment pending detailed analysis.",
+        "flags": [
+          {
+            "severity": "medium",
+            "category": "additive",
+            "description": "Numbered food additive with technological function"
+          }
+        ]
+      },
+      {
+        "name": "Colour E129",
+        "classification": "artificial_additive",
+        "safety_level": "concern",
+        "detailed_description": "Artificial color (129) - synthetic dye used for food coloring. Contains numbered food additive indicating industrial processing.",
+        "health_impact": "Synthetic food dyes may contribute to behavioral changes and allergic sensitization. No nutritional value.",
+        "flags": [
+          {
+            "severity": "medium",
+            "category": "behavioral",
+            "description": "May affect behavior in sensitive individuals"
+          },
+          {
+            "severity": "medium",
+            "category": "additive",
+            "description": "Synthetic chemical with no nutritional value"
+          },
+          {
+            "severity": "medium",
+            "category": "additive",
+            "description": "Numbered food additive with technological function"
+          }
+        ]
+      },
+      {
+        "name": "Inositol",
+        "classification": "unknown",
+        "safety_level": "safe",
+        "detailed_description": "Inositol - ingredient analysis in progress.",
+        "health_impact": "Health impact assessment pending detailed analysis.",
+        "flags": []
+      },
+      {
+        "name": "Vitamins Premix.",
+        "classification": "unknown",
+        "safety_level": "safe",
+        "detailed_description": "Vitamins Premix. - ingredient analysis in progress.",
+        "health_impact": "Health impact assessment pending detailed analysis.",
+        "flags": []
       }
     ],
-    "nova_group": 3,
-    "nova_description": "Processed food with added industrial ingredients. While not as harmful as ultra-processed foods, regular consumption may contribute to nutrient displacement and inflammatory compound intake.",
-    "overall_health_assessment": "Low concern - most ingredients appear safe with minimal processing. Consider overall dietary pattern and balance.",
+    "nova_group": 4,
+    "nova_description": "Ultra-processed food with multiple industrial additives",
+    "overall_health_assessment": "Moderate concern - some ingredients may pose risks",
     "recommendations": [
-      "Monitor total daily sugar intake from all sources to maintain healthy blood glucose levels",
-      "Balance processed foods with whole, minimally processed alternatives in your diet"
+      "Consider products with fewer additives"
     ]
   }
 }
