@@ -163,19 +163,53 @@
         // Camera handling
         async function startCamera() {
             try {
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: 'environment',
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 }
-                    }
-                });
+                // First check if we have the permissions
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('Camera API is not supported in your browser');
+                }
+
+                // Try to get permissions first
+                const permission = await navigator.permissions.query({ name: 'camera' });
+                console.log('Camera permission status:', permission.state);
+
+                // Start with lower resolution for better compatibility
+                // Try rear camera first
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: { exact: "environment" },
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        }
+                    });
+                } catch (e) {
+                    // If rear camera fails, try any available camera
+                    console.log('Rear camera failed, trying any camera');
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: true
+                    });
+                }
+                
                 videoElement.srcObject = stream;
                 videoElement.style.display = 'block';
                 previewImage.style.display = 'none';
+                
+                // Wait for video to be ready
+                await videoElement.play();
+                console.log('Camera started successfully');
             } catch (err) {
                 console.error('Error accessing camera:', err);
-                alert('Could not access camera. Please make sure you have granted camera permissions.');
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    alert('Camera access was denied. Please grant camera permissions and refresh the page.');
+                } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                    alert('No camera found. Please make sure your device has a camera.');
+                } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                    alert('Camera is in use by another application. Please close other apps using the camera.');
+                } else {
+                    alert('Error accessing camera: ' + err.message);
+                }
+                // Switch to file upload mode if camera fails
+                document.querySelector('[data-tab="upload"]').click();
             }
         }
 
