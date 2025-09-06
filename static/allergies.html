@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NutriScan - Health Profile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #334155 100%);
+            color: white;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 1.5rem 2rem;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .navbar.scrolled {
+            padding: 1rem 2rem;
+            background: rgba(15, 23, 42, 0.95);
+        }
+
+        .logo {
+            font-size: 1.75rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #06B6D4, #3B82F6, #8B5CF6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            padding: 0.5rem 0;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: #06B6D4;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #06B6D4, #3B82F6);
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after, .nav-link.active::after {
+            width: 100%;
+        }
+
+        .mobile-nav-toggle {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        .mobile-nav-toggle span {
+            width: 25px;
+            height: 3px;
+            background: white;
+            margin: 3px 0;
+            transition: 0.3s;
+            border-radius: 2px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 6rem 2rem 2rem;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .page-title {
+            font-size: 2.75rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #FFFFFF, #06B6D4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .page-subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto;
+            animation: fadeInUp 0.8s ease-out 0.2s backwards;
+        }
+
+        .profile-section {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .section-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 2rem;
+            font-size: 1rem;
+        }
+
+        .toggle-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .toggle-item {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .toggle-item:hover {
+            transform: translateY(-2px);
+            border-color: rgba(6, 182, 212, 0.3);
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+        }
+
+        .toggle-item.active {
+            border-color: #06B6D4;
+            background: linear-gradient(145deg, rgba(6, 182, 212, 0.2), rgba(6, 182, 212, 0.1));
+        }
+
+        .toggle-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .toggle-name {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 600;
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        .toggle-icon {
+            font-size: 1.5rem;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 13px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .toggle-switch.active {
+            background: #06B6D4;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(24px);
+        }
+
+        .toggle-description {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .severity-selector {
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .toggle-item.active .severity-selector {
+            display: block;
+        }
+
+        .severity-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .severity-options {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .severity-btn {
+            padding: 0.4rem 0.8rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.8);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .severity-btn:hover {
+            border-color: #06B6D4;
+            color: white;
+        }
+
+        .severity-btn.active {
+            background: #06B6D4;
+            border-color: #06B6D4;
+            color: white;
+        }
+
+        .custom-allergies {
+            margin-top: 2rem;
+        }
+
+        .custom-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            color: white;
+            font-size: 1rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .custom-input:focus {
+            outline: none;
+            border-color: #06B6D4;
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+        }
+
+        .custom-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 3rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #06B6D4, #3B82F6);
+            color: white;
+            padding: 1.25rem 3rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(6, 182, 212, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 1.25rem 3rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .save-status {
+            text-align: center;
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .save-status.success {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10B981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .save-status.error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #EF4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 1rem;
+            }
+
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: rgba(15, 23, 42, 0.95);
+                backdrop-filter: blur(20px);
+                flex-direction: column;
+                padding: 2rem;
+                gap: 1.5rem;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .mobile-nav-toggle {
+                display: flex;
+            }
+
+            .container {
+                padding: 6rem 1rem 2rem;
+            }
+
+            .page-title {
+                font-size: 2.25rem;
+            }
+
+            .profile-section {
+                padding: 2rem;
+            }
+
+            .toggle-grid {
+                grid-template-columns: 1fr;
+                gap: 1.25rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn-primary, .btn-secondary {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar" id="navbar">
+        <a href="home.html" class="logo">NutriScan</a>
+        <div class="nav-links" id="navLinks">
+            <a href="home.html" class="nav-link">Home</a>
+            <a href="scan.html" class="nav-link">Scan</a>
+            <a href="results.html" class="nav-link">Results</a>
+            <a href="allergies.html" class="nav-link active">Health Profile</a>
+        </div>
+        <div class="mobile-nav-toggle" id="mobileToggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title">Health Profile</h1>
+            <p class="page-subtitle">Personalize your food analysis by setting your allergies, dietary restrictions, and health conditions</p>
+        </div>
+
+        <div class="profile-section">
+            <h2 class="section-title">
+                <span>🚨</span>
+                Allergies & Sensitivities
+            </h2>
+            <p class="section-subtitle">Select any allergies or food sensitivities you have. We'll highlight these ingredients in your scan results.</p>
+            
+            <div class="toggle-grid" id="allergiesGrid">
+                <!-- Allergies will be populated here -->
+            </div>
+
+            <div class="custom-allergies">
+                <label for="customAllergies" class="severity-label">Additional Allergies or Sensitivities:</label>
+                <textarea id="customAllergies" class="custom-input" placeholder="Enter any other allergies or sensitivities (comma-separated)..."></textarea>
+            </div>
+        </div>
+
+        <div class="profile-section">
+            <h2 class="section-title">
+                <span>🥗</span>
+                Dietary Preferences
+            </h2>
+            <p class="section-subtitle">Tell us about your dietary choices so we can provide better recommendations.</p>
+            
+            <div class="toggle-grid" id="dietaryGrid">
+                <!-- Dietary preferences will be populated here -->
+            </div>
+        </div>
+
+        <div class="profile-section">
+            <h2 class="section-title">
+                <span>💊</span>
+                Health Conditions
+            </h2>
+            <p class="section-subtitle">Select any health conditions you manage. We'll flag ingredients that may be concerning for your specific conditions.</p>
+            
+            <div class="toggle-grid" id="healthGrid">
+                <!-- Health conditions will be populated here -->
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn-primary" onclick="saveProfile()">
+                <span>💾</span>
+                Save Profile
+            </button>
+            <button class="btn-secondary" onclick="resetProfile()">Reset to Default</button>
+        </div>
+
+        <div class="save-status" id="saveStatus"></div>
+    </div>
+
+    <script>
+        // Health profile data
+        const profileData = {
+            allergies: [
+                { id: 'milk', name: 'Milk/Dairy', icon: '🥛', description: 'Lactose intolerance or milk protein allergy' },
+                { id: 'eggs', name: 'Eggs', icon: '🥚', description: 'Egg protein allergy or sensitivity' },
+                { id: 'peanuts', name: 'Peanuts', icon: '🥜', description: 'Peanut allergy (can be severe)' },
+                { id: 'tree_nuts', name: 'Tree Nuts', icon: '🌰', description: 'Almonds, walnuts, cashews, etc.' },
+                { id: 'soy', name: 'Soy', icon: '🫘', description: 'Soybean products and derivatives' },
+                { id: 'wheat', name: 'Wheat/Gluten', icon: '🌾', description: 'Celiac disease or gluten sensitivity' },
+                { id: 'fish', name: 'Fish', icon: '🐟', description: 'Finned fish allergy' },
+                { id: 'shellfish', name: 'Shellfish', icon: '🦐', description: 'Crustaceans and mollusks' },
+                { id: 'sesame', name: 'Sesame', icon: '🫴', description: 'Sesame seeds and tahini' },
+                { id: 'sulfites', name: 'Sulfites', icon: '🧪', description: 'Preservative sensitivity (wine, dried fruits)' }
+            ],
+            dietary: [
+                { id: 'vegetarian', name: 'Vegetarian', icon: '🥬', description: 'No meat, poultry, or fish' },
+                { id: 'vegan', name: 'Vegan', icon: '🌱', description: 'No animal products whatsoever' },
+                { id: 'halal', name: 'Halal', icon: '☪️', description: 'Islamic dietary requirements' },
+                { id: 'kosher', name: 'Kosher', icon: '✡️', description: 'Jewish dietary laws' },
+                { id: 'keto', name: 'Ketogenic', icon: '🥓', description: 'Very low carb, high fat diet' },
+                { id: 'paleo', name: 'Paleo', icon: '🦴', description: 'Whole foods, no processed items' },
+                { id: 'low_sodium', name: 'Low Sodium', icon: '🧂', description: 'Reduced salt intake' },
+                { id: 'low_sugar', name: 'Low Sugar', icon: '🍭', description: 'Minimal added sugars' }
+            ],
+            health: [
+                { id: 'diabetes', name: 'Diabetes', icon: '🩸', description: 'Blood sugar management required' },
+                { id: 'hypertension', name: 'High Blood Pressure', icon: '💗', description: 'Need to limit sodium and certain additives' },
+                { id: 'heart_disease', name: 'Heart Disease', icon: '❤️', description: 'Cardiovascular health considerations' },
+                { id: 'kidney_disease', name: 'Kidney Disease', icon: '🫘', description: 'Limited protein, phosphorus, potassium' },
+                { id: 'liver_disease', name: 'Liver Disease', icon: '🫀', description: 'Avoid alcohol and certain additives' },
+                { id: 'ibs', name: 'IBS/IBD', icon: '🤢', description: 'Irritable bowel or inflammatory bowel disease' },
+                { id: 'gout', name: 'Gout', icon: '🦶', description: 'Need to limit high-purine foods' },
+                { id: 'pregnancy', name: 'Pregnancy', icon: '🤱', description: 'Avoid certain ingredients during pregnancy' }
+            ]
+        };
+
+        let currentProfile = {
+            allergies: {},
+            dietary: {},
+            health: {},
+            customAllergies: ''
+        };
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            setupNavbar();
+            loadProfile();
+            renderProfile();
+        });
+
+        function setupNavbar() {
+            // Navbar scroll effect
+            window.addEventListener('scroll', () => {
+                const navbar = document.getElementById('navbar');
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            });
+
+            // Mobile navigation toggle
+            const mobileToggle = document.getElementById('mobileToggle');
+            const navLinks = document.getElementById('navLinks');
+
+            mobileToggle.addEventListener('click', () => {
+                navLinks.classList.toggle('active');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!mobileToggle.contains(e.target) && !navLinks.contains(e.target)) {
+                    navLinks.classList.remove('active');
+                }
+            });
+        }
+
+        function loadProfile() {
+            const saved = localStorage.getItem('nutriscan_health_profile');
+            if (saved) {
+                currentProfile = JSON.parse(saved);
+            }
+            
+            // Load custom allergies
+            document.getElementById('customAllergies').value = currentProfile.customAllergies || '';
+        }
+
+        function renderProfile() {
+            renderSection('allergies', 'allergiesGrid');
+            renderSection('dietary', 'dietaryGrid');
+            renderSection('health', 'healthGrid');
+        }
+
+        function renderSection(section, gridId) {
+            const grid = document.getElementById(gridId);
+            const items = profileData[section];
+            
+            grid.innerHTML = items.map(item => {
+                const isActive = currentProfile[section][item.id]?.enabled || false;
+                const severity = currentProfile[section][item.id]?.severity || 'mild';
+                
+                return `
+                    <div class="toggle-item ${isActive ? 'active' : ''}" onclick="toggleItem('${section}', '${item.id}')">
+                        <div class="toggle-header">
+                            <div class="toggle-name">
+                                <span class="toggle-icon">${item.icon}</span>
+                                ${item.name}
+                            </div>
+                            <div class="toggle-switch ${isActive ? 'active' : ''}" onclick="event.stopPropagation(); toggleItem('${section}', '${item.id}')"></div>
+                        </div>
+                        <div class="toggle-description">${item.description}</div>
+                        ${section === 'allergies' || section === 'health' ? `
+                            <div class="severity-selector">
+                                <div class="severity-label">Severity Level:</div>
+                                <div class="severity-options">
+                                    <button class="severity-btn ${severity === 'mild' ? 'active' : ''}" 
+                                            onclick="event.stopPropagation(); setSeverity('${section}', '${item.id}', 'mild')">Mild</button>
+                                    <button class="severity-btn ${severity === 'moderate' ? 'active' : ''}" 
+                                            onclick="event.stopPropagation(); setSeverity('${section}', '${item.id}', 'moderate')">Moderate</button>
+                                    <button class="severity-btn ${severity === 'severe' ? 'active' : ''}" 
+                                            onclick="event.stopPropagation(); setSeverity('${section}', '${item.id}', 'severe')">Severe</button>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleItem(section, itemId) {
+            if (!currentProfile[section][itemId]) {
+                currentProfile[section][itemId] = { enabled: false, severity: 'mild' };
+            }
+            
+            currentProfile[section][itemId].enabled = !currentProfile[section][itemId].enabled;
+            renderProfile();
+        }
+
+        function setSeverity(section, itemId, severity) {
+            if (!currentProfile[section][itemId]) {
+                currentProfile[section][itemId] = { enabled: true, severity: 'mild' };
+            }
+            
+            currentProfile[section][itemId].severity = severity;
+            renderProfile();
+        }
+
+        function saveProfile() {
+            // Get custom allergies
+            currentProfile.customAllergies = document.getElementById('customAllergies').value;
+            
+            // Save to localStorage
+            localStorage.setItem('nutriscan_health_profile', JSON.stringify(currentProfile));
+            
+            // Show success message
+            showSaveStatus('success', '✅ Health profile saved successfully!');
+        }
+
+        function resetProfile() {
+            if (confirm('Are you sure you want to reset your health profile? This will clear all your settings.')) {
+                currentProfile = {
+                    allergies: {},
+                    dietary: {},
+                    health: {},
+                    customAllergies: ''
+                };
+                
+                document.getElementById('customAllergies').value = '';
+                localStorage.removeItem('nutriscan_health_profile');
+                renderProfile();
+                
+                showSaveStatus('success', '🔄 Profile reset to default settings.');
+            }
+        }
+
+        function showSaveStatus(type, message) {
+            const statusEl = document.getElementById('saveStatus');
+            statusEl.className = `save-status ${type}`;
+            statusEl.textContent = message;
+            statusEl.style.display = 'block';
+            
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 3000);
+        }
+
+        // Export function for other pages to access profile
+        function getHealthProfile() {
+            return currentProfile;
+        }
+
+        window.getHealthProfile = getHealthProfile;
+    </script>
+</body>
+</html>
