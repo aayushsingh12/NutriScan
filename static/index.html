@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NutriScan - Food Label Analysis</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            text-align: center;
+        }
+        #uploadForm {
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .camera-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 20px auto;
+            position: relative;
+        }
+        #videoElement {
+            width: 100%;
+            border-radius: 8px;
+            display: none;
+        }
+        #previewImage {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 8px;
+            display: none;
+        }
+        .button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .button.capture {
+            background-color: #2196F3;
+        }
+        .button.analyze {
+            background-color: #4CAF50;
+        }
+        #result {
+            margin-top: 20px;
+            text-align: left;
+            white-space: pre-wrap;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+        }
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+        .input-method {
+            margin: 10px 0;
+        }
+        .tab-buttons {
+            margin-bottom: 20px;
+        }
+        .tab-button {
+            padding: 10px 20px;
+            margin: 0 5px;
+            border: none;
+            background-color: #ddd;
+            cursor: pointer;
+        }
+        .tab-button.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .input-container {
+            display: none;
+        }
+        .input-container.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>NutriScan</h1>
+        <h2>Food Label Ingredient Analyzer</h2>
+        
+        <div class="tab-buttons">
+            <button class="tab-button active" data-tab="camera">Use Camera</button>
+            <button class="tab-button" data-tab="upload">Upload Image</button>
+        </div>
+
+        <div id="cameraInput" class="input-container active">
+            <div class="camera-container">
+                <video id="videoElement" playsinline autoplay></video>
+                <img id="previewImage" alt="Preview" />
+            </div>
+            <button id="captureButton" class="button capture">Take Photo</button>
+            <button id="retakeButton" class="button" style="display: none;">Retake Photo</button>
+        </div>
+
+        <div id="uploadInput" class="input-container">
+            <form id="uploadForm">
+                <input type="file" id="imageFile" accept="image/*" capture="environment">
+                <label for="imageFile" class="button">Choose File</label>
+            </form>
+        </div>
+
+        <button id="analyzeButton" class="button analyze" style="display: none;">Analyze Image</button>
+        
+        <div class="loading" id="loading">
+            Analyzing image... Please wait...
+        </div>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        let imageBlob = null;
+        let stream = null;
+
+        // Elements
+        const videoElement = document.getElementById('videoElement');
+        const previewImage = document.getElementById('previewImage');
+        const captureButton = document.getElementById('captureButton');
+        const retakeButton = document.getElementById('retakeButton');
+        const analyzeButton = document.getElementById('analyzeButton');
+        const loading = document.getElementById('loading');
+        const result = document.getElementById('result');
+        
+        // Tab handling
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active class from all buttons and containers
+                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.input-container').forEach(c => c.classList.remove('active'));
+                
+                // Add active class to clicked button and corresponding container
+                button.classList.add('active');
+                document.getElementById(button.dataset.tab + 'Input').classList.add('active');
+                
+                if (button.dataset.tab === 'camera') {
+                    startCamera();
+                } else {
+                    stopCamera();
+                }
+            });
+        });
+
+        // Camera handling
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                });
+                videoElement.srcObject = stream;
+                videoElement.style.display = 'block';
+                previewImage.style.display = 'none';
+            } catch (err) {
+                console.error('Error accessing camera:', err);
+                alert('Could not access camera. Please make sure you have granted camera permissions.');
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            videoElement.style.display = 'none';
+        }
+
+        // Capture photo
+        captureButton.addEventListener('click', () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+            canvas.getContext('2d').drawImage(videoElement, 0, 0);
+            
+            canvas.toBlob(blob => {
+                imageBlob = blob;
+                previewImage.src = URL.createObjectURL(blob);
+                videoElement.style.display = 'none';
+                previewImage.style.display = 'block';
+                captureButton.style.display = 'none';
+                retakeButton.style.display = 'inline-block';
+                analyzeButton.style.display = 'inline-block';
+            }, 'image/jpeg', 0.8);
+        });
+
+        // Retake photo
+        retakeButton.addEventListener('click', () => {
+            imageBlob = null;
+            videoElement.style.display = 'block';
+            previewImage.style.display = 'none';
+            captureButton.style.display = 'inline-block';
+            retakeButton.style.display = 'none';
+            analyzeButton.style.display = 'none';
+            result.textContent = '';
+        });
+
+        // File upload handling
+        document.getElementById('imageFile').addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                imageBlob = e.target.files[0];
+                previewImage.src = URL.createObjectURL(imageBlob);
+                previewImage.style.display = 'block';
+                analyzeButton.style.display = 'inline-block';
+            }
+        });
+
+        // Analyze image
+        analyzeButton.addEventListener('click', async () => {
+            if (!imageBlob) {
+                alert('Please capture or upload an image first');
+                return;
+            }
+
+            loading.style.display = 'block';
+            result.textContent = '';
+            
+            const formData = new FormData();
+            formData.append('file', imageBlob, 'image.jpg');
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                // Format and display the results
+                let formattedResult = '';
+                
+                if (data.ingredient_analysis) {
+                    formattedResult += 'Analysis Results:\n\n';
+                    
+                    data.ingredient_analysis.forEach(ingredient => {
+                        formattedResult += `Ingredient: ${ingredient.name}\n`;
+                        formattedResult += `Category: ${ingredient.category}\n`;
+                        formattedResult += `Safety Level: ${ingredient.safety_level}\n`;
+                        formattedResult += `Description: ${ingredient.description}\n`;
+                        
+                        if (ingredient.flags.length > 0) {
+                            formattedResult += 'Flags:\n';
+                            ingredient.flags.forEach(flag => {
+                                formattedResult += `  - ${flag.type}: ${flag.description}\n`;
+                            });
+                        }
+                        
+                        formattedResult += '\n';
+                    });
+                    
+                    formattedResult += `NOVA Group: ${data.nova_group}\n`;
+                    formattedResult += `Description: ${data.nova_description}\n`;
+                    formattedResult += `Health Notes: ${data.health_notes}\n`;
+                } else {
+                    formattedResult = JSON.stringify(data, null, 2);
+                }
+                
+                result.textContent = formattedResult;
+            } catch (error) {
+                result.textContent = 'Error: ' + error.message;
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+
+        // Start with camera on if on mobile
+        if (/Mobi|Android/i.test(navigator.userAgent)) {
+            startCamera();
+        }
+    </script>
+</body>
+</html>

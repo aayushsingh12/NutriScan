@@ -1,65 +1,24 @@
 {
   "top_product": {
     "ingredients": [
-      "table salt",
-      "vegetables* 11% (onion* 3.5%",
-      "celery* 3.3%",
-      "carrot* 1.6%",
-      "parsnips*",
-      "spinach*)",
-      "potato starch*",
-      "sugar*",
-      "glucose syrup*",
-      "shea butter*",
-      "yeast extract*",
-      "natural vegetable",
-      "onion and celery flavours",
-      "turmeric*",
-      "black pepper*",
-      "garlic*",
-      "*organically grown",
-      "may contain: eggs",
-      "fish",
-      "gluten",
-      "milk",
-      "soy"
+      "water",
+      "sugar",
+      "carbonic acid",
+      "colour e150d",
+      "acidifier phosphoric acid",
+      "natural flavor",
+      "aroma caffeine"
     ],
     "nova_group": 4
   },
   "rag_analysis": {
-    "product_name": "table salt",
+    "product_name": "water",
     "ingredients": [
-      "table salt vegetables* 11% (onion* 3.5% celery* 3.3% carrot* 1.6% parsnips* spinach*) potato starch* sugar* glucose syrup* shea butter* yeast extract* natural vegetable onion and celery flavours turmeric* black pepper* garlic* *organically grown may contain: eggs fish gluten milk soy"
+      "water sugar carbonic acid colour e150d acidifier phosphoric acid natural flavor aroma caffeine"
     ],
-    "warnings": [
-      {
-        "type": "hidden_sugar",
-        "message": "Contains sugar, glucose, which may contribute to hidden sugar content",
-        "item": "table salt vegetables* 11% (onion* 3.5% celery* 3.3% carrot* 1.6% parsnips* spinach*) potato starch* sugar* glucose syrup* shea butter* yeast extract* natural vegetable onion and celery flavours turmeric* black pepper* garlic* *organically grown may contain: eggs fish gluten milk soy"
-      },
-      {
-        "type": "allergen",
-        "message": "Contains potential allergen: soy",
-        "item": "table salt vegetables* 11% (onion* 3.5% celery* 3.3% carrot* 1.6% parsnips* spinach*) potato starch* sugar* glucose syrup* shea butter* yeast extract* natural vegetable onion and celery flavours turmeric* black pepper* garlic* *organically grown may contain: eggs fish gluten milk soy"
-      },
-      {
-        "type": "allergen",
-        "message": "Contains potential allergen: milk",
-        "item": "table salt vegetables* 11% (onion* 3.5% celery* 3.3% carrot* 1.6% parsnips* spinach*) potato starch* sugar* glucose syrup* shea butter* yeast extract* natural vegetable onion and celery flavours turmeric* black pepper* garlic* *organically grown may contain: eggs fish gluten milk soy"
-      },
-      {
-        "type": "allergen",
-        "message": "Contains potential allergen: egg",
-        "item": "table salt vegetables* 11% (onion* 3.5% celery* 3.3% carrot* 1.6% parsnips* spinach*) potato starch* sugar* glucose syrup* shea butter* yeast extract* natural vegetable onion and celery flavours turmeric* black pepper* garlic* *organically grown may contain: eggs fish gluten milk soy"
-      },
-      {
-        "type": "allergen",
-        "message": "Contains potential allergen: fish",
-        "item": "table salt vegetables* 11% (onion* 3.5% celery* 3.3% carrot* 1.6% parsnips* spinach*) potato starch* sugar* glucose syrup* shea butter* yeast extract* natural vegetable onion and celery flavours turmeric* black pepper* garlic* *organically grown may contain: eggs fish gluten milk soy"
-      }
-    ],
+    "warnings": [],
     "nova_group": 3,
     "nova_description": "Processed food with added ingredients",
-    "health_notes": "Contains added sugars which may contribute to daily sugar intake"
+    "health_notes": "Contains processed ingredients - moderate consumption recommended; Contains 1 forms of sugar - monitor sugar intake; Contains 2 additives - check individual sensitivities"
   }
 }

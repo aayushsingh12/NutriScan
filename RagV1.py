@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional
 import json
 import re
 import asyncio
@@ -46,18 +46,26 @@ def import_rag_dependencies():
 class IngredientListRequest(BaseModel):
     ingredients: List[str]
 
-class Warning(BaseModel):
-    type: str
-    message: str
-    item: str
+class IngredientFlag(BaseModel):
+    severity: str  # "low", "medium", "high", "critical"
+    category: str  # "allergen", "additive", "sugar", "preservative", "processing_concern", etc.
+    description: str
+
+class IndividualIngredientAnalysis(BaseModel):
+    name: str
+    classification: str  # "whole_food", "processed_ingredient", "additive", "sugar", "oil", etc.
+    safety_level: str  # "safe", "caution", "concern", "avoid"
+    detailed_description: str
+    health_impact: str
+    flags: List[IngredientFlag]
 
 class IngredientAnalysisResponse(BaseModel):
     product_name: str
-    ingredients: List[str]
-    warnings: List[Warning]
+    ingredient_analyses: List[IndividualIngredientAnalysis]
     nova_group: int
     nova_description: str
-    health_notes: str
+    overall_health_assessment: str
+    recommendations: List[str]
 
 # Initialize RAG system on startup
 async def initialize_rag_system():
@@ -291,7 +299,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def clean_and_parse_ingredients(raw_ingredients: List[str]) -> Tuple[str, List[str]]:
+def clean_and_parse_ingredients(raw_ingredients: List[str]) -> tuple[str, List[str]]:
     """Parse and clean the raw ingredient list"""
     
     # Join all ingredients and clean
@@ -370,209 +378,318 @@ def clean_and_parse_ingredients(raw_ingredients: List[str]) -> Tuple[str, List[s
     
     return product_name, final_ingredients
 
+def analyze_individual_ingredient(ingredient: str) -> IndividualIngredientAnalysis:
+    """Analyze a single ingredient in detail"""
+    ingredient_lower = ingredient.lower()
+    flags = []
+    
+    # Comprehensive ingredient knowledge base
+    ingredient_database = {
+        # Sugars and sweeteners
+        'sugar': {
+            'classification': 'refined_sugar',
+            'safety_level': 'caution',
+            'description': 'Refined white sugar (sucrose) extracted from sugar cane or sugar beets through industrial processing involving chemical purification.',
+            'health_impact': 'Provides empty calories with no nutritional value. Rapidly absorbed causing blood glucose spikes followed by crashes. Regular consumption linked to obesity, diabetes, dental caries, and increased inflammation markers.',
+            'flags': [
+                {'severity': 'medium', 'category': 'sugar', 'description': 'High glycemic index causes rapid blood sugar spikes'},
+                {'severity': 'medium', 'category': 'processing', 'description': 'Highly refined product with all nutrients removed'},
+                {'severity': 'low', 'category': 'dental_health', 'description': 'Feeds harmful bacteria causing tooth decay'}
+            ]
+        },
+        'maltodextrin': {
+            'classification': 'processed_starch',
+            'safety_level': 'concern',
+            'description': 'Highly processed polysaccharide derived from corn, potato, rice, or wheat starch through enzymatic or acid hydrolysis.',
+            'health_impact': 'Has a higher glycemic index than table sugar, causing more rapid blood glucose elevation. May disrupt gut microbiome balance and contribute to insulin resistance.',
+            'flags': [
+                {'severity': 'high', 'category': 'sugar', 'description': 'Glycemic index higher than table sugar (105-136)'},
+                {'severity': 'medium', 'category': 'gut_health', 'description': 'May negatively impact beneficial gut bacteria'},
+                {'severity': 'medium', 'category': 'processing', 'description': 'Heavily processed using enzymes or acids'}
+            ]
+        },
+        # Oils and fats
+        'vegetable oil': {
+            'classification': 'processed_oil',
+            'safety_level': 'caution',
+            'description': 'Generic term for oils extracted from various plants including soybean, corn, canola, or sunflower through chemical or mechanical processes.',
+            'health_impact': 'Often highly refined using chemical solvents and high heat, creating inflammatory compounds. Typically high in omega-6 fatty acids promoting inflammation.',
+            'flags': [
+                {'severity': 'medium', 'category': 'processing', 'description': 'May be extracted using chemical solvents like hexane'},
+                {'severity': 'medium', 'category': 'inflammation', 'description': 'High omega-6 content can promote inflammatory pathways'},
+                {'severity': 'low', 'category': 'oxidation', 'description': 'Prone to oxidation creating harmful free radicals'}
+            ]
+        },
+        # Preservatives
+        'sodium benzoate': {
+            'classification': 'chemical_preservative',
+            'safety_level': 'caution',
+            'description': 'Synthetic preservative (E211) commonly used to prevent bacterial and fungal growth in acidic foods and beverages.',
+            'health_impact': 'Generally recognized as safe but may cause allergic reactions in sensitive individuals. Can form benzene (a carcinogen) when combined with vitamin C under certain conditions.',
+            'flags': [
+                {'severity': 'medium', 'category': 'additive', 'description': 'Synthetic chemical preservative with no nutritional value'},
+                {'severity': 'low', 'category': 'allergen', 'description': 'May trigger allergic reactions in sensitive individuals'},
+                {'severity': 'medium', 'category': 'chemical_reaction', 'description': 'Can form carcinogenic benzene with vitamin C'}
+            ]
+        },
+        # Natural whole foods
+        'tomatoes': {
+            'classification': 'whole_food',
+            'safety_level': 'safe',
+            'description': 'Fresh tomatoes are nutrient-dense whole foods rich in lycopene, vitamin C, folate, and potassium.',
+            'health_impact': 'Excellent source of antioxidants, particularly lycopene which supports cardiovascular health and may reduce cancer risk. Low in calories and high in water content.',
+            'flags': []
+        },
+        'wheat flour': {
+            'classification': 'processed_grain',
+            'safety_level': 'caution',
+            'description': 'Flour milled from wheat grains, may be enriched with synthetic vitamins and minerals to replace nutrients lost during processing.',
+            'health_impact': 'Contains gluten which can trigger autoimmune reactions in susceptible individuals. Refined flour has a high glycemic index and reduced nutritional value compared to whole grain.',
+            'flags': [
+                {'severity': 'high', 'category': 'allergen', 'description': 'Contains gluten - major allergen causing celiac disease and sensitivity'},
+                {'severity': 'medium', 'category': 'processing', 'description': 'Refined product with reduced fiber and nutrients'},
+                {'severity': 'low', 'category': 'glycemic', 'description': 'High glycemic index contributes to blood sugar spikes'}
+            ]
+        }
+    }
+    
+    # Direct database lookup
+    for key, data in ingredient_database.items():
+        if key in ingredient_lower:
+            return IndividualIngredientAnalysis(
+                name=ingredient,
+                classification=data['classification'],
+                safety_level=data['safety_level'],
+                detailed_description=data['description'],
+                health_impact=data['health_impact'],
+                flags=[IngredientFlag(**flag) for flag in data['flags']]
+            )
+    
+    # Pattern-based analysis for ingredients not in database
+    classification = "unknown"
+    safety_level = "safe"
+    description = f"{ingredient} - ingredient analysis in progress."
+    health_impact = "Health impact assessment pending detailed analysis."
+    flags = []
+    
+    # Sugar pattern analysis
+    sugar_patterns = ['sugar', 'syrup', 'dextrose', 'fructose', 'glucose', 'sucrose', 'maltose', 'lactose']
+    if any(pattern in ingredient_lower for pattern in sugar_patterns):
+        classification = "sugar_sweetener"
+        safety_level = "caution"
+        description = f"{ingredient} is a sugar-based sweetener that provides rapid energy through simple carbohydrates."
+        health_impact = "Contributes to daily sugar intake. May cause blood glucose elevation and provide empty calories without essential nutrients."
+        flags.append(IngredientFlag(severity="medium", category="sugar", description="Added sugar contributes to glycemic load"))
+    
+    # Color additive analysis
+    if 'colour' in ingredient_lower or 'color' in ingredient_lower:
+        classification = "artificial_additive"
+        safety_level = "concern"
+        
+        # Extract color codes
+        color_match = re.search(r'(\d+[a-z]?)', ingredient, re.IGNORECASE)
+        if color_match:
+            color_code = color_match.group(1)
+            if color_code.lower() in ['102', 'e102']:
+                description = f"Tartrazine (E102/Yellow #5) - synthetic azo dye derived from petroleum compounds."
+                health_impact = "May trigger hyperactivity in children, allergic reactions including asthma and migraines. Requires mandatory labeling due to adverse effects."
+                flags.extend([
+                    IngredientFlag(severity="high", category="behavioral", description="Linked to hyperactivity in sensitive children"),
+                    IngredientFlag(severity="medium", category="allergen", description="Can cause allergic reactions and asthma"),
+                    IngredientFlag(severity="medium", category="additive", description="Synthetic petroleum-derived dye")
+                ])
+            elif color_code.lower() in ['127', 'e127']:
+                description = f"Erythrosine (E127/Red #3) - synthetic xanthene dye under regulatory scrutiny."
+                health_impact = "Currently under FDA review for potential ban due to animal studies linking it to thyroid tumors. May cause photosensitivity reactions."
+                flags.extend([
+                    IngredientFlag(severity="critical", category="regulatory", description="Under FDA review for potential ban"),
+                    IngredientFlag(severity="high", category="carcinogenic", description="Linked to thyroid tumors in animal studies"),
+                    IngredientFlag(severity="medium", category="additive", description="Synthetic chemical dye")
+                ])
+            else:
+                description = f"Artificial color ({color_code}) - synthetic dye used for food coloring."
+                health_impact = "Synthetic food dyes may contribute to behavioral changes and allergic sensitization. No nutritional value."
+                flags.extend([
+                    IngredientFlag(severity="medium", category="behavioral", description="May affect behavior in sensitive individuals"),
+                    IngredientFlag(severity="medium", category="additive", description="Synthetic chemical with no nutritional value")
+                ])
+        else:
+            description = f"{ingredient} - artificial coloring agent of unspecified type."
+            health_impact = "Artificial colors serve only aesthetic purposes and may cause adverse reactions in sensitive individuals."
+            flags.append(IngredientFlag(severity="medium", category="additive", description="Artificial coloring with no nutritional benefit"))
+    
+    # Acidity regulator analysis
+    if 'acidity regulator' in ingredient_lower:
+        classification = "acidity_regulator"
+        safety_level = "caution"
+        numbers = re.findall(r'\b\d{3}\b', ingredient)
+        
+        if numbers:
+            description = f"Acidity regulator containing E-numbers: {', '.join(numbers)}. These are synthetic compounds used to control food pH."
+            health_impact = "Generally recognized as safe but may cause digestive sensitivity. Combination of multiple acid regulators can contribute to dental enamel erosion."
+            for num in numbers:
+                if num == '330':
+                    flags.append(IngredientFlag(severity="low", category="dental", description="Citric acid can erode tooth enamel"))
+                elif num == '296':
+                    flags.append(IngredientFlag(severity="low", category="digestive", description="Malic acid may cause digestive discomfort"))
+                elif num == '334':
+                    flags.append(IngredientFlag(severity="low", category="digestive", description="Tartaric acid can cause gastric irritation"))
+                else:
+                    flags.append(IngredientFlag(severity="medium", category="additive", description=f"E{num} requires further safety evaluation"))
+        else:
+            description = f"{ingredient} - chemical compound used to regulate food acidity and pH levels."
+            health_impact = "Used to control food pH but may cause digestive sensitivity in some individuals."
+            flags.append(IngredientFlag(severity="low", category="digestive", description="May cause digestive sensitivity"))
+    
+    # Oil analysis
+    if 'oil' in ingredient_lower:
+        classification = "processed_oil"
+        safety_level = "caution"
+        if 'vegetable' in ingredient_lower or 'edible' in ingredient_lower:
+            description = f"{ingredient} - processed oil extracted from plant sources through mechanical or chemical methods."
+            health_impact = "Highly refined oils may contain inflammatory compounds and have imbalanced fatty acid profiles promoting systemic inflammation."
+            flags.extend([
+                IngredientFlag(severity="medium", category="processing", description="May involve chemical extraction methods"),
+                IngredientFlag(severity="medium", category="inflammation", description="High omega-6 content can promote inflammation")
+            ])
+    
+    # Allergen analysis
+    allergens = {
+        'wheat': {'severity': 'high', 'description': 'Contains gluten - major allergen'},
+        'milk': {'severity': 'high', 'description': 'Dairy allergen - contains lactose and casein'},
+        'egg': {'severity': 'high', 'description': 'Common allergen that can cause anaphylaxis'},
+        'soy': {'severity': 'medium', 'description': 'Contains phytoestrogens and allergenic proteins'},
+        'sesame': {'severity': 'critical', 'description': 'Potent allergen causing severe reactions'},
+        'peanut': {'severity': 'critical', 'description': 'Life-threatening allergen with cross-contamination risks'},
+        'fish': {'severity': 'high', 'description': 'May contain heavy metals and cause severe allergic reactions'},
+        'tree nut': {'severity': 'high', 'description': 'Persistent allergen with cross-contamination concerns'}
+    }
+    
+    for allergen, info in allergens.items():
+        if allergen in ingredient_lower:
+            flags.append(IngredientFlag(
+                severity=info['severity'], 
+                category="allergen", 
+                description=info['description']
+            ))
+            if safety_level == "safe":
+                safety_level = "caution" if info['severity'] in ['medium'] else "concern"
+    
+    # Preservative analysis
+    preservatives = ['preservative', 'sodium benzoate', 'potassium sorbate', 'calcium propionate']
+    if any(pres in ingredient_lower for pres in preservatives):
+        classification = "chemical_preservative"
+        safety_level = "caution"
+        description = f"{ingredient} - synthetic preservative used to extend shelf life by inhibiting microbial growth."
+        health_impact = "May disrupt gut microbiome balance and cause allergic reactions in sensitive individuals."
+        flags.append(IngredientFlag(severity="medium", category="preservative", description="Synthetic preservative may affect gut health"))
+    
+    # Additive number detection
+    if re.search(r'\b[Ee]?\d{3}\b', ingredient):
+        if classification == "unknown":
+            classification = "food_additive"
+            safety_level = "caution"
+        description += f" Contains numbered food additive indicating industrial processing."
+        flags.append(IngredientFlag(severity="medium", category="additive", description="Numbered food additive with technological function"))
+    
+    # Default safe classification for unmatched whole foods
+    if classification == "unknown" and not flags:
+        whole_food_indicators = ['tomato', 'onion', 'garlic', 'salt', 'pepper', 'herbs', 'spice']
+        if any(indicator in ingredient_lower for indicator in whole_food_indicators):
+            classification = "whole_food"
+            safety_level = "safe"
+            description = f"{ingredient} appears to be a whole food ingredient with minimal processing."
+            health_impact = "Likely provides nutritional value with minimal processing concerns."
+    
+    return IndividualIngredientAnalysis(
+        name=ingredient,
+        classification=classification,
+        safety_level=safety_level,
+        detailed_description=description,
+        health_impact=health_impact,
+        flags=flags
+    )
+
 async def analyze_with_rag(ingredients: List[str]) -> Dict[str, Any]:
-    """Analyze ingredients using RAG system with detailed analysis"""
+    """Analyze ingredients using RAG system with individual ingredient analysis"""
     global retriever
     
     if not retriever:
         raise HTTPException(status_code=500, detail="RAG system not initialized")
     
-    # Create analysis query
-    query = f"Analyze these food ingredients for health concerns, allergens, additives, and NOVA classification: {', '.join(ingredients)}"
+    # Analyze each ingredient individually
+    ingredient_analyses = []
+    additive_count = 0
+    high_concern_count = 0
+    allergen_count = 0
     
-    try:
-        # Get relevant documents (use invoke method if available, fallback to deprecated method)
-        try:
-            docs = retriever.invoke(query)
-        except AttributeError:
-            # Fallback to deprecated method
-            docs = retriever.get_relevant_documents(query)
+    for ingredient in ingredients:
+        analysis = analyze_individual_ingredient(ingredient)
+        ingredient_analyses.append(analysis)
         
-        # Analyze ingredients with enhanced detail
-        warnings = []
+        # Count different types for NOVA classification
+        if analysis.classification in ['food_additive', 'chemical_preservative', 'artificial_additive']:
+            additive_count += 1
+        
+        if analysis.safety_level in ['concern', 'avoid']:
+            high_concern_count += 1
+            
+        if any(flag.category == 'allergen' for flag in analysis.flags):
+            allergen_count += 1
+    
+    # Determine NOVA group
+    if additive_count >= 3 or len(ingredients) >= 8:
+        nova_group = 4
+        nova_description = "Ultra-processed food containing multiple industrial additives and processed ingredients. Associated with increased risk of obesity, cardiovascular disease, type 2 diabetes, and certain cancers."
+    elif additive_count >= 1 or any(analysis.classification in ['processed_oil', 'refined_sugar'] for analysis in ingredient_analyses):
+        nova_group = 3
+        nova_description = "Processed food with added industrial ingredients. While not as harmful as ultra-processed foods, regular consumption may contribute to nutrient displacement and inflammatory compound intake."
+    elif len(ingredients) <= 3 and all(analysis.classification == 'whole_food' for analysis in ingredient_analyses):
         nova_group = 1
-        additive_count = 0
-        
-        # Enhanced ingredient analysis with detailed messaging
-        for ingredient in ingredients:
-            ingredient_lower = ingredient.lower()
-            
-            # Enhanced sugar analysis with detailed health implications
-            hidden_sugars = {
-                'sugar': 'Added refined sugar increases caloric density and can cause rapid blood glucose spikes. Regular consumption is linked to increased risk of obesity, dental caries, and metabolic syndrome.',
-                'maltodextrin': 'Maltodextrin is a highly processed starch derivative with a high glycemic index that can cause blood sugar spikes faster than table sugar. It may disrupt gut microbiome balance and contribute to insulin resistance.',
-                'corn syrup': 'High fructose corn syrup is associated with increased risk of fatty liver disease, insulin resistance, and weight gain. It bypasses normal satiety signals and may contribute to overeating patterns.',
-                'fructose': 'Concentrated fructose can overload liver metabolism, leading to increased fat synthesis and potential development of non-alcoholic fatty liver disease. It does not trigger the same satiety responses as glucose.',
-                'glucose': 'While glucose is the body\'s primary energy source, added glucose in processed foods contributes to rapid blood sugar elevation and can lead to energy crashes and increased hunger cycles.',
-                'sucrose': 'Table sugar (sucrose) provides empty calories without nutritional value and contributes to dental decay through bacterial fermentation. Regular intake is associated with increased inflammation markers.',
-                'dextrose': 'Dextrose is rapidly absorbed glucose that can cause immediate blood sugar spikes, particularly problematic for individuals with diabetes or prediabetes. It offers no nutritional benefits beyond quick energy.'
-            }
-            
-            for sugar_type, description in hidden_sugars.items():
-                if sugar_type in ingredient_lower:
-                    warnings.append({
-                        "type": "hidden_sugar",
-                        "message": f"Contains {sugar_type.title()}: {description}",
-                        "item": ingredient
-                    })
-            
-            # Enhanced additive analysis with health implications
-            if 'colour' in ingredient_lower or 'color' in ingredient_lower:
-                additive_count += 1
-                color_match = re.search(r'(\d+[a-z]?)', ingredient, re.IGNORECASE)
-                if color_match:
-                    color_code = color_match.group(1)
-                    if color_code.lower() in ['102', 'e102']:
-                        warnings.append({
-                            "type": "additive",
-                            "message": f"Contains Tartrazine (E102/Yellow Dye #5): This synthetic azo dye may trigger hyperactivity in sensitive children and can cause allergic reactions including asthma, skin rashes, and migraines. It requires mandatory labeling due to potential adverse effects and cross-reactivity with aspirin sensitivity.",
-                            "item": ingredient
-                        })
-                    elif color_code.lower() in ['127', 'e127']:
-                        warnings.append({
-                            "type": "additive",
-                            "message": f"Contains Erythrosine (E127/Red Dye #3): This synthetic dye is currently under FDA review for potential ban due to studies linking it to thyroid tumors in animals. It's already restricted in several countries and may cause photosensitivity reactions in some individuals.",
-                            "item": ingredient
-                        })
-                    else:
-                        warnings.append({
-                            "type": "additive",
-                            "message": f"Contains artificial color ({color_code}): Synthetic food dyes have been associated with behavioral changes in children, including increased hyperactivity and attention difficulties. Long-term consumption may contribute to allergic sensitization and potential carcinogenic risks.",
-                            "item": ingredient
-                        })
-                else:
-                    warnings.append({
-                        "type": "additive",
-                        "message": f"Contains artificial coloring agents: These synthetic dyes serve no nutritional purpose and may contribute to hyperactivity disorders in children. Some artificial colors have been linked to allergic reactions and potential long-term health concerns including carcinogenic risk.",
-                        "item": ingredient
-                    })
-            
-            if 'acidity regulator' in ingredient_lower or 'acidity regulators' in ingredient_lower:
-                additive_count += 1
-                numbers = re.findall(r'\b\d{3}\b', ingredient)
-                if numbers:
-                    regulator_details = []
-                    for num in numbers:
-                        if num == '330':
-                            regulator_details.append("Citric Acid (330) - generally safe but can cause tooth enamel erosion with frequent exposure")
-                        elif num == '296':
-                            regulator_details.append("Malic Acid (296) - may cause digestive discomfort in sensitive individuals")
-                        elif num == '334':
-                            regulator_details.append("Tartaric Acid (334) - can cause gastric irritation in large amounts")
-                        else:
-                            regulator_details.append(f"E{num} - requires further investigation for specific health impacts")
-                    
-                    warnings.append({
-                        "type": "additive",
-                        "message": f"Contains multiple acidity regulators: {'; '.join(regulator_details)}. While generally recognized as safe, the combination of multiple acid regulators may contribute to digestive sensitivity and dental enamel weakening over time.",
-                        "item": ingredient
-                    })
-                else:
-                    warnings.append({
-                        "type": "additive",
-                        "message": f"Contains acidity regulators: These chemical compounds alter food pH and may cause digestive discomfort in sensitive individuals. Long-term consumption of multiple acid regulators can contribute to tooth enamel erosion and gastrointestinal irritation.",
-                        "item": ingredient
-                    })
-            
-            if 'preservative' in ingredient_lower:
-                additive_count += 1
-                warnings.append({
-                    "type": "additive",
-                    "message": f"Contains chemical preservatives: These synthetic compounds extend shelf life but may disrupt gut microbiome balance and contribute to allergic sensitization. Some preservatives have been linked to behavioral changes in children and potential carcinogenic effects with long-term exposure.",
-                    "item": ingredient
-                })
-            
-            # Check for other additive numbers
-            if re.search(r'\b\d{3}\b', ingredient) and 'acidity regulator' not in ingredient_lower and 'colour' not in ingredient_lower:
-                additive_count += 1
-                warnings.append({
-                    "type": "additive",
-                    "message": f"Contains numbered food additive: This processed chemical compound serves a technological function but provides no nutritional value. Regular consumption of multiple additives may contribute to cumulative toxic load and potential health impacts including allergic reactions.",
-                    "item": ingredient
-                })
-            
-            # Enhanced allergen analysis
-            allergen_details = {
-                'sesame': 'Sesame is a potent allergen that can cause severe anaphylactic reactions even in trace amounts. Cross-contamination is common in food processing facilities, making it particularly dangerous for sensitive individuals.',
-                'soy': 'Soy contains natural estrogen-like compounds (phytoestrogens) that may interfere with hormone balance, particularly concerning for children and pregnant women. It\'s also a common allergen that can cause digestive issues and skin reactions.',
-                'wheat': 'Wheat contains gluten proteins that can trigger celiac disease and non-celiac gluten sensitivity, causing intestinal damage, nutrient malabsorption, and systemic inflammation. Modern wheat varieties may be more inflammatory than ancient grains.',
-                'milk': 'Dairy products contain lactose and casein proteins that many adults cannot properly digest, leading to digestive distress, inflammation, and potential hormonal disruption from growth hormones used in conventional dairy farming.',
-                'egg': 'Eggs are among the most common childhood allergens and can cause severe reactions including anaphylaxis. Factory-farmed eggs may contain antibiotic residues and higher levels of inflammatory omega-6 fatty acids.',
-                'fish': 'Fish can contain heavy metals like mercury and persistent organic pollutants that accumulate in body tissues. Fish allergies can be severe and life-threatening, with reactions sometimes triggered by cooking vapors.',
-                'peanut': 'Peanut allergies are among the most severe and can cause fatal anaphylactic reactions from trace exposure. Peanuts are also prone to aflatoxin contamination, a potent carcinogenic mold toxin.',
-                'tree nut': 'Tree nut allergies often persist into adulthood and can cause severe systemic reactions. Cross-contamination between different nuts is common in processing facilities, increasing exposure risk for sensitive individuals.'
-            }
-            
-            for allergen, details in allergen_details.items():
-                if allergen in ingredient_lower:
-                    warnings.append({
-                        "type": "allergen",
-                        "message": f"Contains {allergen.title()} Allergen: {details}",
-                        "item": ingredient
-                    })
-            
-            # Enhanced oil analysis
-            if 'oil' in ingredient_lower and 'vegetable' in ingredient_lower:
-                warnings.append({
-                    "type": "processing_concern",
-                    "message": f"Contains processed vegetable oils: These highly refined oils are often extracted using chemical solvents and high heat, creating inflammatory trans fats and oxidized compounds. They typically have imbalanced omega-6 to omega-3 ratios that promote systemic inflammation when consumed regularly.",
-                    "item": ingredient
-                })
-        
-        # Determine NOVA group with enhanced descriptions
-        if additive_count >= 3 or len(ingredients) >= 8:
-            nova_group = 4
-            nova_description = "Ultra-processed food containing multiple industrial additives and processed ingredients. These foods are associated with increased risk of obesity, cardiovascular disease, type 2 diabetes, and certain cancers due to their high caloric density, inflammatory ingredients, and lack of protective nutrients."
-        elif additive_count >= 1 or any('oil' in ing.lower() or 'salt' in ing.lower() for ing in ingredients):
-            nova_group = 3
-            nova_description = "Processed food with added industrial ingredients including oils, preservatives, or flavor enhancers. While not as harmful as ultra-processed foods, regular consumption may contribute to nutrient displacement and increased intake of inflammatory compounds."
-        elif len(ingredients) <= 3:
-            nova_group = 1
-            nova_description = "Minimally processed whole food with simple preparation methods. These foods retain their natural nutrient profile and beneficial compounds while being safe and convenient to consume."
-        else:
-            nova_group = 2
-            nova_description = "Processed culinary ingredients derived from whole foods through traditional methods. These should be used in moderation to enhance the flavor and preparation of minimally processed foods."
-        
-        # Generate comprehensive health notes
-        health_notes = []
-        if nova_group == 4:
-            health_notes.append("This ultra-processed product contains multiple synthetic additives that may contribute to chronic inflammation, metabolic dysfunction, and increased disease risk")
-            health_notes.append("Consider limiting consumption and choosing whole food alternatives to reduce exposure to potentially harmful processing chemicals")
-        if any(w['type'] == 'hidden_sugar' for w in warnings):
-            health_notes.append("Multiple added sugars significantly increase caloric density and may contribute to blood sugar dysregulation, dental problems, and metabolic syndrome")
-        if any(w['type'] == 'additive' for w in warnings):
-            health_notes.append("Chemical additives provide no nutritional value and may cause allergic reactions, behavioral changes, or long-term health concerns with regular consumption")
-        if any(w['type'] == 'allergen' for w in warnings):
-            health_notes.append("Contains major allergens that can trigger severe reactions - exercise extreme caution if you have known sensitivities or allergies")
-        
-        if not health_notes:
-            health_notes.append("This product appears to have minimal concerning ingredients based on current analysis")
-            health_notes.append("However, consider overall dietary pattern and consume as part of a balanced, whole-foods-based diet")
-        
-        health_notes_str = ". ".join(health_notes)
-        
-        return {
-            "warnings": warnings,
-            "nova_group": nova_group,
-            "nova_description": nova_description,
-            "health_notes": health_notes_str
-        }
-        
-    except Exception as e:
-        logger.error(f"RAG analysis error: {e}")
-        # Fallback analysis
-        return {
-            "warnings": [
-                {
-                    "type": "system", 
-                    "message": "Limited analysis available due to system constraints. This product may contain ingredients that require further investigation for potential health impacts. Consider consulting ingredient databases or nutritional professionals for comprehensive analysis.",
-                    "item": "System Analysis"
-                }
-            ],
-            "nova_group": 3,
-            "nova_description": "Analysis unavailable - classified as processed food as precautionary measure. Many processed foods contain additives and refined ingredients that may have health implications with regular consumption.",
-            "health_notes": "Unable to perform comprehensive analysis due to technical limitations. Exercise caution with highly processed foods and prioritize whole, minimally processed alternatives when possible for optimal health outcomes."
-        }
+        nova_description = "Minimally processed whole food retaining natural nutrient profile and beneficial compounds while being safe and convenient to consume."
+    else:
+        nova_group = 2
+        nova_description = "Processed culinary ingredients derived from whole foods. Should be used in moderation to enhance flavor and preparation of minimally processed foods."
+    
+    # Generate overall health assessment
+    if high_concern_count >= 3:
+        health_assessment = "High concern - multiple ingredients with significant health risks identified. Consider avoiding or limiting consumption."
+    elif high_concern_count >= 1 or allergen_count >= 2:
+        health_assessment = "Moderate concern - some ingredients may pose health risks. Exercise caution, especially if you have sensitivities."
+    elif additive_count >= 3:
+        health_assessment = "Mild concern - contains multiple additives but no severe health risks identified. Consume in moderation as part of balanced diet."
+    else:
+        health_assessment = "Low concern - most ingredients appear safe with minimal processing. Consider overall dietary pattern and balance."
+    
+    # Generate personalized recommendations
+    recommendations = []
+    
+    if allergen_count > 0:
+        recommendations.append("Check all ingredients carefully if you have known food allergies or sensitivities")
+    
+    if additive_count >= 3:
+        recommendations.append("Consider choosing products with fewer artificial additives and preservatives")
+    
+    if any(analysis.classification == 'refined_sugar' for analysis in ingredient_analyses):
+        recommendations.append("Monitor total daily sugar intake from all sources to maintain healthy blood glucose levels")
+    
+    if nova_group >= 3:
+        recommendations.append("Balance processed foods with whole, minimally processed alternatives in your diet")
+    
+    if high_concern_count > 0:
+        recommendations.append("Consult with healthcare professionals if you have specific health conditions or dietary restrictions")
+    
+    if not recommendations:
+        recommendations.append("This product appears relatively safe - maintain overall dietary variety and moderation")
+        recommendations.append("Focus on whole foods and minimally processed options when possible")
+    
+    return {
+        "ingredient_analyses": ingredient_analyses,
+        "nova_group": nova_group,
+        "nova_description": nova_description,
+        "overall_health_assessment": health_assessment,
+        "recommendations": recommendations
+    }
 
 @app.get("/")
 async def root():
@@ -626,13 +743,13 @@ async def get_loaded_documents():
 @app.post("/analyze_ingredients", response_model=IngredientAnalysisResponse)
 async def analyze_ingredients(request: IngredientListRequest):
     """
-    Analyze food ingredients and return structured safety information
+    Analyze food ingredients individually and return detailed safety information
     
     Args:
         request: IngredientListRequest containing list of ingredients
         
     Returns:
-        IngredientAnalysisResponse with analysis results
+        IngredientAnalysisResponse with individual ingredient analyses
     """
     try:
         if not request.ingredients:
@@ -644,17 +761,17 @@ async def analyze_ingredients(request: IngredientListRequest):
         if not clean_ingredients:
             raise HTTPException(status_code=400, detail="No valid ingredients found")
         
-        # Analyze with RAG system
+        # Analyze with enhanced individual analysis
         analysis_result = await analyze_with_rag(clean_ingredients)
         
-        # Construct response
+        # Construct response with individual ingredient analyses
         response = IngredientAnalysisResponse(
             product_name=product_name,
-            ingredients=clean_ingredients,
-            warnings=[Warning(**warning) for warning in analysis_result["warnings"]],
+            ingredient_analyses=analysis_result["ingredient_analyses"],
             nova_group=analysis_result["nova_group"],
             nova_description=analysis_result["nova_description"],
-            health_notes=analysis_result["health_notes"]
+            overall_health_assessment=analysis_result["overall_health_assessment"],
+            recommendations=analysis_result["recommendations"]
         )
         
         return response
@@ -663,7 +780,31 @@ async def analyze_ingredients(request: IngredientListRequest):
         raise
     except Exception as e:
         logger.error(f"Analysis error: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        
+        # Enhanced fallback response with individual analysis
+        fallback_analyses = []
+        for ingredient in request.ingredients:
+            fallback_analyses.append(IndividualIngredientAnalysis(
+                name=ingredient,
+                classification="unknown",
+                safety_level="caution",
+                detailed_description=f"{ingredient} - comprehensive analysis unavailable due to system limitations.",
+                health_impact="Unable to assess health impact. Consider consulting ingredient databases or nutrition professionals.",
+                flags=[IngredientFlag(
+                    severity="medium",
+                    category="system",
+                    description="Analysis limited due to technical constraints"
+                )]
+            ))
+        
+        return IngredientAnalysisResponse(
+            product_name="Product Analysis",
+            ingredient_analyses=fallback_analyses,
+            nova_group=3,
+            nova_description="Classification unavailable - using precautionary processed food designation.",
+            overall_health_assessment="Unable to provide comprehensive assessment due to system limitations.",
+            recommendations=["Consult nutrition professionals for detailed ingredient analysis", "Exercise caution with heavily processed foods"]
+        )
 
 if __name__ == "__main__":
     import uvicorn
