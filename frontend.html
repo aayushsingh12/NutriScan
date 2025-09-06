@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriScan - Food Safety Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #2c3e50, #3498db);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            min-height: 600px;
+        }
+
+        .input-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+
+        .output-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        #ingredientInput {
+            width: 100%;
+            height: 300px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            background: white;
+        }
+
+        #ingredientInput:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.3);
+        }
+
+        .analyze-btn {
+            width: 100%;
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+            color: white;
+            border: none;
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
+        }
+
+        .analyze-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        #results {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            height: 400px;
+            overflow-y: auto;
+            font-size: 14px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        .error {
+            color: #e74c3c;
+            background: #fdf2f2;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 5px solid #e74c3c;
+        }
+
+        .success {
+            color: #27ae60;
+        }
+
+        .product-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .nova-group {
+            background: #3498db;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 25px;
+            display: inline-block;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .nova-group.nova-4 {
+            background: #e74c3c;
+        }
+
+        .nova-group.nova-3 {
+            background: #f39c12;
+        }
+
+        .nova-group.nova-2 {
+            background: #f1c40f;
+            color: #2c3e50;
+        }
+
+        .nova-group.nova-1 {
+            background: #27ae60;
+        }
+
+        .ingredients-list {
+            margin-bottom: 20px;
+        }
+
+        .ingredients-list h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .ingredients-list ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .ingredients-list li {
+            background: #ecf0f1;
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+
+        .warnings {
+            margin-bottom: 20px;
+        }
+
+        .warnings h4 {
+            color: #e74c3c;
+            margin-bottom: 10px;
+        }
+
+        .warning-item {
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+
+        .warning-additive {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+        }
+
+        .warning-allergen {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+
+        .warning-hidden_sugar {
+            background: #d1ecf1;
+            border-left-color: #17a2b8;
+        }
+
+        .health-notes {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 5px solid #28a745;
+            margin-top: 15px;
+        }
+
+        .health-notes h4 {
+            color: #155724;
+            margin-bottom: 10px;
+        }
+
+        .sample-input {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border-left: 4px solid #2196f3;
+        }
+
+        .sample-input small {
+            color: #1565c0;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🥗 NutriScan</h1>
+            <p>AI-Powered Food Safety & Nutrition Analyzer</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="input-section">
+                <h2 class="section-title">📝 Ingredient Input</h2>
+                
+                <div class="sample-input">
+                    <small onclick="loadSampleData()">📋 Click here to load sample data</small>
+                </div>
+                
+                <div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #ffc107;">
+                    <strong>How to use:</strong>
+                    <ol style="margin: 5px 0 0 20px; font-size: 0.9em;">
+                        <li>Click "load sample data" above for a quick demo</li>
+                        <li>Or paste your own ingredient list in JSON format</li>
+                        <li>Click "Analyze" to get AI-powered safety insights</li>
+                    </ol>
+                </div>
+                
+                <textarea id="ingredientInput" placeholder='Paste your ingredients JSON here:
+
+{
+    "ingredients": [
+        "Rice",
+        "Corn Meal",
+        "Edible Vegetable Oil",
+        "Salt",
+        "Sugar",
+        "Spices",
+        "Colour 160c",
+        "Acidity Regulators 330, 296, 334"
+    ]
+}'></textarea>
+                
+                <button class="analyze-btn" onclick="analyzeIngredients()">
+                    🔬 Analyze Ingredients
+                </button>
+            </div>
+            
+            <div class="output-section">
+                <h2 class="section-title">📊 Analysis Results</h2>
+                <div id="results">
+                    <div class="loading">
+                        Enter ingredients and click "Analyze" to see results...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:8000';
+
+        function loadSampleData() {
+            const sampleData = {
+                "ingredients": [
+                    "5",
+                    "NAMKEEN 151",
+                    "Meal 44,",
+                    "Cereal Products  67",
+                    "Rice",
+                    "Corn Meal 239, Edible Vegetable Oil Rice Bran Oil, Sesame",
+                    "Oil ,",
+                    "Seasoning Spices  Condiments, lodised Salt Sugar",
+                    "Flavour Natural and",
+                    "Nature Identical Flavouring Substances,",
+                    "Black Salt Tomato Powder Acidity Regulators 330, 296, 334,",
+                    "Colour 160c , Maltodextrin, Gram Meal 04",
+                    "4 6"
+                ]
+            };
+            
+            document.getElementById('ingredientInput').value = JSON.stringify(sampleData, null, 4);
+        }
+
+        async function analyzeIngredients() {
+            const inputText = document.getElementById('ingredientInput').value.trim();
+            const resultsDiv = document.getElementById('results');
+            const analyzeBtn = document.querySelector('.analyze-btn');
+            
+            if (!inputText) {
+                showError('Please enter ingredients data');
+                return;
+            }
+            
+            // Show loading state
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = '🔄 Analyzing...';
+            resultsDiv.innerHTML = '<div class="loading">🔬 Analyzing ingredients with AI-powered RAG system... Please wait...</div>';
+            
+            try {
+                // Parse and validate JSON
+                let ingredientsData;
+                try {
+                    ingredientsData = JSON.parse(inputText);
+                } catch (e) {
+                    throw new Error('Invalid JSON format. Please check your input.');
+                }
+                
+                if (!ingredientsData.ingredients || !Array.isArray(ingredientsData.ingredients)) {
+                    throw new Error('JSON must contain an "ingredients" array');
+                }
+                
+                // Try the main structured endpoint first
+                try {
+                    const response = await fetch(`${API_BASE_URL}/analyze_ingredients`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(ingredientsData)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    
+                    if (result.error) {
+                        throw new Error(result.error);
+                    }
+                    
+                    displayResults(result);
+                    
+                } catch (error) {
+                    console.log('Main endpoint failed, trying simple endpoint:', error);
+                    
+                    // Fallback to simple endpoint
+                    const fallbackResponse = await fetch(`${API_BASE_URL}/analyze_ingredients_simple`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(ingredientsData)
+                    });
+                    
+                    if (!fallbackResponse.ok) {
+                        throw new Error(`HTTP error! status: ${fallbackResponse.status}`);
+                    }
+                    
+                    const fallbackResult = await fallbackResponse.json();
+                    
+                    if (fallbackResult.error) {
+                        throw new Error(fallbackResult.error);
+                    }
+                    
+                    displayResults(fallbackResult);
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showError(`Analysis failed: ${error.message}`);
+            } finally {
+                // Reset button
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = '🔬 Analyze Ingredients';
+            }
+        }
+        
+        function showError(message) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `<div class="error">❌ Error: ${message}</div>`;
+        }
+        
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            const novaClass = `nova-${data.nova_group}`;
+            
+            let html = `
+                <div class="product-name">
+                    🍽️ Product: ${data.product_name || 'Food Product'}
+                </div>
+                
+                <div class="nova-group ${novaClass}">
+                    NOVA Group ${data.nova_group}
+                </div>
+                <p style="margin-bottom: 20px; color: #7f8c8d;">
+                    ${data.nova_description}
+                </p>
+                
+                <div class="ingredients-list">
+                    <h4>📋 Processed Ingredients (${data.ingredients.length})</h4>
+                    <ul>
+                        ${data.ingredients.map(ing => `<li>${ing}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+            
+            if (data.warnings && data.warnings.length > 0) {
+                html += `
+                    <div class="warnings">
+                        <h4>⚠️ Warnings & Alerts (${data.warnings.length})</h4>
+                        ${data.warnings.map(warning => {
+                            // Handle both object and simple warning formats
+                            const type = warning.type || 'general';
+                            const message = warning.message || warning;
+                            const item = warning.item || '';
+                            
+                            return `
+                                <div class="warning-item warning-${type}">
+                                    <strong>${getWarningIcon(type)} ${capitalizeFirst(type)}:</strong>
+                                    <br>${message}
+                                    ${item ? `<br><em>Item: ${item}</em>` : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            }
+            
+            if (data.health_notes) {
+                html += `
+                    <div class="health-notes">
+                        <h4>🏥 Health Notes</h4>
+                        <p>${data.health_notes}</p>
+                    </div>
+                `;
+            }
+            
+            // Add RAG system info
+            html += `
+                <div style="margin-top: 20px; padding: 15px; background: #f0f8ff; border-radius: 8px; border-left: 5px solid #007bff;">
+                    <h4 style="color: #0056b3; margin-bottom: 10px;">🤖 AI Analysis Info</h4>
+                    <p style="font-size: 0.9em; color: #495057;">
+                        This analysis was generated using our AI-powered RAG (Retrieval Augmented Generation) system, 
+                        which combines knowledge from FDA regulations, FSSAI guidelines, PubChem database, and food safety research.
+                    </p>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        function getWarningIcon(type) {
+            const icons = {
+                'additive': '🧪',
+                'allergen': '🚨',
+                'hidden_sugar': '🍬',
+                'system': '⚙️',
+                'general': '⚠️'
+            };
+            return icons[type] || '⚠️';
+        }
+        
+        function capitalizeFirst(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1).replace('_', ' ');
+        }
+        
+        // Check API health on page load
+        window.addEventListener('load', async function() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                if (response.ok) {
+                    const health = await response.json();
+                    console.log('API Health:', health);
+                    
+                    // Show API status in the UI
+                    const statusDiv = document.createElement('div');
+                    statusDiv.innerHTML = `
+                        <div style="position: fixed; top: 10px; right: 10px; background: #28a745; color: white; padding: 8px 12px; border-radius: 5px; font-size: 12px; z-index: 1000;">
+                            🟢 API Connected - RAG System: ${health.rag_system === 'active' ? 'Active' : 'Limited'}
+                        </div>
+                    `;
+                    document.body.appendChild(statusDiv);
+                    
+                    // Remove status after 3 seconds
+                    setTimeout(() => {
+                        statusDiv.remove();
+                    }, 3000);
+                }
+            } catch (error) {
+                console.log('API not available:', error);
+                
+                // Show offline status
+                const statusDiv = document.createElement('div');
+                statusDiv.innerHTML = `
+                    <div style="position: fixed; top: 10px; right: 10px; background: #dc3545; color: white; padding: 8px 12px; border-radius: 5px; font-size: 12px; z-index: 1000;">
+                        🔴 API Offline - Please start the server
+                    </div>
+                `;
+                document.body.appendChild(statusDiv);
+            }
+        });
+    </script>
+</body>
+</html>

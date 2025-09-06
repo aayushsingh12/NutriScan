@@ -535,5 +535,9 @@ async def analyze_ingredients_simple(request: IngredientListRequest):
         return {"error": f"Analysis failed: {str(e)}"}
 
 if __name__ == "__main__":
+<<<<<<< HEAD
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+=======
+    main()
+>>>>>>> 60124866759fce970479d3360665c884bcb47ba3
