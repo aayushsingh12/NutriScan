@@ -11,11 +11,11 @@ One snap → instant truth about hidden sugars, additives, allergens, and how pr
 ## 🚨 The Problem  
 
 Food labels are *built to confuse*:  
-- 🌀 Sugar split into 10 different names so it looks “less.”  
-- 🎭 Harmless-sounding phrases (*apple juice concentrate*, *natural flavors*) hiding junk.  
-- 🧮 Numbers & jargon no one understands.  
+-  Sugar split into 10 different names so it looks “less.”  
+-  Harmless-sounding phrases (*apple juice concentrate*, *natural flavors*) hiding junk.  
+-  Numbers & jargon no one understands.  
 
-👉 **Result**: Families, kids, elderly, and health-conscious people are left in the dark.  
+ **Result**: Families, kids, elderly, and health-conscious people are left in the dark.  
 
 ---
 
@@ -23,12 +23,12 @@ Food labels are *built to confuse*:
 
 ✨ With NutriScan, food labels finally make sense.  
 
-- **📸 Snap a Label** – Upload or scan any food package  
-- **🔍 OCR + AI Analysis** – Ingredients decoded & cleaned  
-- **🏷 NOVA Health Score** – 1 (best) → 4 (ultra-processed)  
-- **⚠ Hidden Risk Flags** – Sugars, additives, preservatives, allergens  tailored to users needs
-- **👤 Personalized Alerts** – Based on allergies & health conditions  
-- **🛒 Cart Analysis** – See the *big picture* of your grocery haul  
+- **Snap a Label** – Upload or scan any food package  
+- **OCR + AI Analysis** – Ingredients decoded & cleaned  
+- **NOVA Health Score** – 1 (best) → 4 (ultra-processed)  
+- **Hidden Risk Flags** – Sugars, additives, preservatives, allergens  tailored to users needs
+- **Personalized Alerts** – Based on allergies & health conditions  
+- **Cart Analysis** – See the *big picture* of your grocery haul  
 
 ---
 <img width="932" height="532" alt="featurespage" src="https://github.com/user-attachments/assets/469772b6-9831-4438-b854-238dafc07e56" />
