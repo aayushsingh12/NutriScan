@@ -66,7 +66,7 @@ Food labels are *built to confuse*:
 - **Google Gemini**: Vision AI for ingredient extraction  
 - **LangChain + FAISS**: RAG system for knowledge retrieval
 - **Vector Embeddings**: Semantic search
-- **llama3**: NLP processing pipeline
+- **Llama3**: NLP processing pipeline
 
 #### **Frontend Stack**
 - **React + Vite**: Lightning-fast, no framework bloat
